@@ -1,23 +1,10 @@
 import './style.css'
 import Phaser from 'phaser'
+import { GameScene } from './Scenes/game.js';
+import { MenuScene } from './Scenes/menu.js';
 
-class GameScene extends Phaser.Scene{
-  constructor(){
-    super("scene-game")
-  }
+import'./Scenes/game.js'
 
-  preload(){
-    //load les sprites, sons, animations
-  }
-
-  create(){
-    //créer les instances
-  }
-
-  update(){
-    //changements (mouvements, play anims, ...)
-  }
-}
 
 //config du jeu
 const config = {
@@ -29,7 +16,7 @@ const config = {
     default:"arcade",
     debug:true
   },
-  scene:[GameScene]
+  scene:[MenuScene, GameScene]
 }
 
 const game = new Phaser.Game(config)
