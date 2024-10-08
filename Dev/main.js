@@ -141,21 +141,20 @@ class GameScene extends Phaser.Scene{
 				farmableElement.destroy(); // Supprimer le farmable du jeu
 			}
 
-			this.createResource(ressourceDrop, farmableElement.x, farmableElement.y);
+			this.createResource(ressourceDrop, farmableElement.x + farmableElement.displayWidth / 2, farmableElement.y + farmableElement.displayHeight / 2, farmableElement.displayWidth, farmableElement.displayHeight);
+      console.log()
 		}
 	}
 
-	createResource(type, x, y) {
+	createResource(type, x, y, sizeX, sizeY) {
 		// Générer des positions aléatoires autour du farmable
-		const offsetX = Phaser.Math.Between(-30, 30);  // Décalage horizontal aléatoire
-		const offsetY = Phaser.Math.Between(-30, 30);  // Décalage vertical aléatoire
+		const offsetX = Phaser.Math.Between(-sizeX, sizeX);  // Décalage horizontal aléatoire
+		const offsetY = Phaser.Math.Between(-sizeY, sizeY);  // Décalage vertical aléatoire
 		const resourceX = x + offsetX;
 		const resourceY = y + offsetY;
 	
 		// Créer un sprite de ressource dans le groupe à la position générée
 		const resourceSprite = this.resourceGroup.create(resourceX, resourceY, type);
-		resourceSprite.setOrigin(0, 0);
-
     resourceSprite.setDisplaySize(30, 30);
 	
 		// Ajouter une physique de collision pour permettre la collecte
