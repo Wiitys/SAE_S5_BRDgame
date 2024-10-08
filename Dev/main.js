@@ -106,7 +106,7 @@ class GameScene extends Phaser.Scene{
   }
 
   createFarmable(type, x, y) {
-    // Créer un sprite farmable
+    // Créer une instance farmable
     const farmableElement = this.farmableGroup.create(x, y, type);
     farmableElement.setOrigin(0, 0);
     switch(type){
@@ -123,7 +123,7 @@ class GameScene extends Phaser.Scene{
         farmableElement.ressourceDrop = 'wood'
     }
     
-    // Associer un objet Farmable au sprite
+    // Associer un objet Farmable à l'instance
     farmableElement.farmableData = new Farmable(type, 10)
 	}
 
@@ -153,12 +153,12 @@ class GameScene extends Phaser.Scene{
 		const resourceX = x + offsetX;
 		const resourceY = y + offsetY;
 	
-		// Créer un sprite de ressource dans le groupe à la position générée
-		const resourceSprite = this.resourceGroup.create(resourceX, resourceY, type);
-    resourceSprite.setDisplaySize(30, 30);
+		// Créer une instance de ressource dans le groupe à la position générée
+		const resourceElement = this.resourceGroup.create(resourceX, resourceY, type);
+    resourceElement.setDisplaySize(30, 30);
 	
 		// Ajouter une physique de collision pour permettre la collecte
-		this.physics.add.overlap(this.player, resourceSprite, (player, resource) => {
+		this.physics.add.overlap(this.player, resourceElement, (player, resource) => {
 			// Quand le joueur marche sur la ressource, elle est collectée
 			this.collectResource(type, 1);  // Ajouter la ressource à la collection
 			resource.destroy();  // Supprimer la ressource visuelle après collecte
