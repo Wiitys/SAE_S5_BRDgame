@@ -20,11 +20,11 @@ class GameScene extends Phaser.Scene{
 
   preload(){
     //load les sprites, sons, animations
-    this.load.image("player", "\assets\player.png")
-	this.load.image("tree", "/assets/tree.png");
-	this.load.image("wood", "/assets/wood.png");
-	this.load.image("stone", "/assets/stone.png");
-	this.load.image("meat", "/assets/meat.png");
+    this.load.image("player", "/assets/player.png")
+    this.load.image("tree", "/assets/tree.png");
+    this.load.image("wood", "/assets/wood.png");
+    this.load.image("rock", "/assets/rock.png");
+    this.load.image("meat", "/assets/meat.png");
   }
 
   create(){
@@ -34,20 +34,33 @@ class GameScene extends Phaser.Scene{
     this.player.body.allowGravity = false
     this.cursor = this.input.keyboard.createCursorKeys()
 
-	// Créer le groupe de farmables
-	this.farmableGroup = this.physics.add.group();
-	// Initialiser le groupe des ressources
-    this.resourceGroup = this.physics.add.group();
+    // Créer le groupe de farmables
+    this.farmableGroup = this.physics.add.group();
+    // Initialiser le groupe des ressources
+      this.resourceGroup = this.physics.add.group();
 
-	// Ajouter des farmables
-	this.createFarmable('tree', 200, 200);
-	this.createFarmable('tree', 300, 300);
-
-	// Ajouter un overlap pour détecter l'interaction
-	this.physics.add.overlap(this.player, this.farmableGroup, this.hitFarmable, null, this);
+    // Ajouter des farmables
+    this.createFarmable('tree', 200, 200);
+    this.createFarmable('tree', 300, 300);
+    this.createFarmable('rock', 100, 150);
   }
 
   update(){
+    // Gestion des mouvements du joueur
+    this.handlePlayerMovement();
+
+    // Attaquer les farmables en appuyant sur "E"
+    if (Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E))) {
+      // Vérifier la collision manuellement
+      this.farmableGroup.children.each(farmableSprite => {
+        if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), farmableSprite.getBounds())) {
+          this.hitFarmable(this.player, farmableSprite);
+        }
+      });
+    }
+  }
+
+  handlePlayerMovement(){
     //changements (mouvements, play anims, ...)
     const {up, down, left, right} = this.cursor
 
@@ -88,16 +101,30 @@ class GameScene extends Phaser.Scene{
   }
 
   createFarmable(type, x, y) {
-	// Créer un sprite farmable
-	const farmableSprite = this.farmableGroup.create(x, y, type);
-	farmableSprite.setOrigin(0.5, 0.5);
-
-	// Associer un objet Farmable au sprite
-	farmableSprite.farmableData = new Farmable(type, 5); // Par exemple : 5 HP pour un arbre
+    // Créer un sprite farmable
+    const farmableSprite = this.farmableGroup.create(x, y, type);
+    farmableSprite.setOrigin(0, 0);
+    switch(type){
+      case 'tree':
+        farmableSprite.setDisplaySize(75, 100);
+        farmableSprite.ressourceDrop = 'wood'
+        break;
+      case 'rock':
+        farmableSprite.setDisplaySize(75, 75);
+        farmableSprite.ressourceDrop = 'stone'
+        break;
+      default:
+        farmableSprite.setDisplaySize(75, 75);
+        farmableSprite.ressourceDrop = 'wood'
+    }
+    
+    // Associer un objet Farmable au sprite
+    farmableSprite.farmableData = new Farmable(type, 10)
 	}
 
 	hitFarmable(player, farmableSprite) {
 		const farmable = farmableSprite.farmableData;
+    const ressourceDrop = farmableSprite.ressourceDrop;
 
 		if (farmable) {
 			farmable.hit(); // Infliger des dégâts
@@ -109,7 +136,7 @@ class GameScene extends Phaser.Scene{
 				farmableSprite.destroy(); // Supprimer le farmable du jeu
 			}
 
-			this.createResource('wood', farmableSprite.x, farmableSprite.y);
+			this.createResource(ressourceDrop, farmableSprite.x, farmableSprite.y);
 		}
 	}
 
