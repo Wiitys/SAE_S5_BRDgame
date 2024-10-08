@@ -39,6 +39,8 @@ class GameScene extends Phaser.Scene{
     this.player.body.allowGravity = false
     this.cursor = this.input.keyboard.createCursorKeys()
 
+    this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
+
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
     // Initialiser le groupe des ressources
@@ -188,7 +190,7 @@ const config = {
       debug:true
     }
   },
-  scene:[GameScene]
+  scene:[GameScene],
 }
 
 const game = new Phaser.Game(config)
