@@ -5,7 +5,6 @@ import { MenuScene } from './Scenes/menu.js';
 
 import'./Scenes/game.js'
 
-
 //config du jeu
 const config = {
   type:Phaser.WEBGL,
@@ -14,10 +13,11 @@ const config = {
   canvas: gameCanvas,
   physics:{
     default:"arcade",
-    debug:true
+    arcade:{
+      debug:true
+    }
   },
   scene:[MenuScene, GameScene]
 }
 
 const game = new Phaser.Game(config)
-
