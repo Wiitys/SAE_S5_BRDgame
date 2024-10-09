@@ -1,5 +1,10 @@
 import './style.css'
 import Phaser from 'phaser'
+import { GameScene } from './Scenes/game.js';
+import { MenuScene } from './Scenes/menu.js';
+
+import'./Scenes/game.js'
+
 import Ressource from './Ressource.js'
 import Farmable from './Farmable.js'
 
@@ -190,7 +195,7 @@ const config = {
       debug:true
     }
   },
-  scene:[GameScene],
+  scene:[MenuScene, GameScene]
 }
 
 const game = new Phaser.Game(config)
