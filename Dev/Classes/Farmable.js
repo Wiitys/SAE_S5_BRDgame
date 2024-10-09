@@ -1,19 +1,29 @@
 export default class Farmable{
-  constructor(type, hp = 10) {
-    this.type = type;      // Type de ressource : bois, charbon, viande, etc.
-    this.hp = hp;  // Quantité de la ressource
+  constructor(type, maxHp = 10) {
+    this.type = type;                   // Type de Farmable : arbre, rocher, ...
+    this.maxHp = maxHp;                 // Hp max du farmable
+    this.currentHp = maxHp;
+    this.hasSwapped = false;
   }
 
-  set(type, hp){
+  set(type, maxHp, currentHp){
       this.type = type;
-      this.hp = hp;
+      this.maxHp = maxHp;
+      this.currentHp = currentHp;
   }
 
   hit() {
-    this.hp--;
+    this.currentHp--;
+  }
+
+  isHalfHp() {
+    if(this.currentHp <= this.maxHp/2 && this.currentHp > 0){
+      this.hasSwapped = true
+    }
+    return (this.currentHp <= this.maxHp/2 && this.currentHp > 0)
   }
 
   isDestroyed() {
-    return this.hp <= 0;
+    return this.currentHp <= 0;
   }
 }

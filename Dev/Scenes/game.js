@@ -23,7 +23,10 @@ export class GameScene extends Phaser.Scene {
     this.load.image("player", "/assets/player.png");
 
     //farmables
-    this.load.image("tree", "/assets/tree.png");
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
+      frameWidth: 32,  // largeur de chaque frame
+      frameHeight: 32  // hauteur de chaque frame
+    });
     this.load.image("rock", "/assets/rock.png");
 
     //ressources
@@ -51,7 +54,7 @@ export class GameScene extends Phaser.Scene {
     this.createFarmable("tree", 300, 300);
     this.createFarmable("rock", 100, 150);
 
-    this.player.setScale(0.5);
+    this.player.setDisplaySize(32, 32);
 
     this.playerHP = new HealthBar(this);
 
@@ -131,19 +134,20 @@ export class GameScene extends Phaser.Scene {
 
   createFarmable(type, x, y) {
     // Créer une instance farmable
-    const farmableElement = this.farmableGroup.create(x, y, type);
+    const farmableElement = this.farmableGroup.create(x, y, type, 0);
     farmableElement.setOrigin(0, 0);
+
     switch (type) {
       case "tree":
-        farmableElement.setDisplaySize(75, 100);
+        farmableElement.setDisplaySize(32, 32);
         farmableElement.ressourceDrop = "wood";
         break;
       case "rock":
-        farmableElement.setDisplaySize(75, 75);
+        farmableElement.setDisplaySize(32, 32);
         farmableElement.ressourceDrop = "stone";
         break;
       default:
-        farmableElement.setDisplaySize(75, 75);
+        farmableElement.setDisplaySize(32, 32);
         farmableElement.ressourceDrop = "wood";
     }
 
@@ -158,7 +162,12 @@ export class GameScene extends Phaser.Scene {
     if (farmable) {
       farmable.hit(); // Infliger des dégâts
 
-      console.log(`HP restant pour ${farmable.type}: ${farmable.hp}`);
+      console.log(`HP restant pour ${farmable.type}: ${farmable.currentHp}`);
+
+      if (!farmable.hasSwapped && farmable.isHalfHp()) {
+        console.log(`${farmable.type} half hp !`);
+        this.farmableHalfHp(farmableElement, farmable.type);
+      }
 
       if (farmable.isDestroyed()) {
         console.log(`${farmable.type} détruit !`);
@@ -173,6 +182,19 @@ export class GameScene extends Phaser.Scene {
         farmableElement.displayHeight
       );
       console.log();
+    }
+  }
+
+  farmableHalfHp(farmableElement, type){
+    switch (type) {
+      case "tree":
+        farmableElement.setFrame(1);
+        break;
+      case "rock":
+        //farmableElement.setFrame(1);  pas encore fait
+        break;
+      default:
+        farmableElement.setFrame(1);
     }
   }
 
