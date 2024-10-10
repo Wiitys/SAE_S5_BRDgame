@@ -20,7 +20,8 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     //load les sprites, sons, animations
-    this.load.image("player", "/assets/player.png");
+    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
@@ -36,9 +37,37 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+
+    // Animation pour la direction "side"
+    this.anims.create({
+      key: 'side', 
+      frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    // Animation pour aller vers le haut
+    this.anims.create({
+      key: 'up', 
+      frames: this.anims.generateFrameNumbers('player', { start: 6, end: 8 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    // Animation pour aller vers le bas
+    this.anims.create({
+      key: 'down', 
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 2 }), 
+      frameRate: 10,
+      repeat: -1
+    });
+    
+    this.lastDirectionPlayer = 'up';
+
+
     //créer les instances
-    this.player = this.physics.add.image(0, 0, "player").setOrigin(0, 0);
-    this.player.setImmovable(true);
+    this.player = this.physics.add.sprite(0, 0, "player").setOrigin(0, 0);
+    //this.player.setImmovable(true);
     this.player.body.allowGravity = false;
     this.cursor = this.input.keyboard.createCursorKeys();
 
@@ -99,15 +128,34 @@ export class GameScene extends Phaser.Scene {
 
     if (left.isDown && !right.isDown) {
       velocityX = -this.playerSpeed;
+      this.lastDirectionPlayer = 'left';
     } else if (right.isDown && !left.isDown) {
       velocityX = this.playerSpeed;
+      this.lastDirectionPlayer = 'right';
     }
 
     // Déplacement vertical
     if (up.isDown && !down.isDown) {
       velocityY = -this.playerSpeed;
+      this.lastDirectionPlayer = 'up';
+
     } else if (down.isDown && !up.isDown) {
       velocityY = this.playerSpeed;
+      this.lastDirectionPlayer = 'down';  
+    }
+
+    if (this.lastDirectionPlayer === 'up') {
+      this.player.flipX = false;
+      this.player.play('up', true);
+    } else if (this.lastDirectionPlayer === 'down') {
+      this.player.flipX = false;
+        this.player.play('down', true); 
+    } else if (this.lastDirectionPlayer === 'left') {
+        this.player.flipX = true; 
+        this.player.play('side', true); 
+    } else if (this.lastDirectionPlayer === 'right') {
+        this.player.flipX = false;
+        this.player.play('side', true); 
     }
 
     // Si le joueur se déplace en diagonale, on normalise la vitesse
@@ -117,6 +165,24 @@ export class GameScene extends Phaser.Scene {
       velocityX = velocityX > 0 ? diagonalSpeed : -diagonalSpeed;
       velocityY = velocityY > 0 ? diagonalSpeed : -diagonalSpeed;
     }
+
+        // Si aucune touche n'est pressée, arrêter l'animation
+        if (velocityX === 0 && velocityY === 0) {
+          this.player.anims.stop();  
+          switch(this.lastDirectionPlayer){
+            case 'left':
+              this.player.setFrame(3);
+              break;
+            case 'right':
+              this.player.setFrame(3);
+              break;
+            case 'down':
+              this.player.setFrame(0);
+              break;
+            default:
+              this.player.setFrame(6);
+          }
+      }
 
     // Applique les vitesses au joueur
     this.player.setVelocity(velocityX, velocityY);
