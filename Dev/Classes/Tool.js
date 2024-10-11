@@ -4,11 +4,11 @@ export default class Tool{
       this.quantity = quantity;  // Quantité de tools
     }
     
-    add(quantity) {
+    addTool(quantity) {
       this.quantity += quantity;  // Ajouter une quantité à la ressource
     }
     
-    remove(quantity) {
+    removeTool(quantity) {
       if (this.quantity >= quantity) {
         this.quantity -= quantity;  // Retirer une quantité si elle est disponible
       } else {

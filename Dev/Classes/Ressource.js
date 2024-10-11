@@ -4,11 +4,11 @@ export default class Ressource{
     this.quantity = quantity;  // Quantité de la ressource
   }
   
-  add(quantity) {
+  addResource(quantity) {
     this.quantity += quantity;  // Ajouter une quantité à la ressource
   }
   
-  remove(quantity) {
+  removeResource(quantity) {
     if (this.quantity >= quantity) {
       this.quantity -= quantity;  // Retirer une quantité si elle est disponible
     } else {

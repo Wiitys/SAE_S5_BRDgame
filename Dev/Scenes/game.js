@@ -3,6 +3,7 @@ import Farmable from "../Classes/Farmable.js";
 import HealthBar from "../Classes/HealthBar.js";
 import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
+import Inventory from "../Classes/Inventory.js";
 
 export class GameScene extends Phaser.Scene {
 	constructor() {
@@ -13,17 +14,16 @@ export class GameScene extends Phaser.Scene {
 		this.playerHP;
 		this.farmableGroup;
 		this.resourcesGroup;
-		this.resources = {};
-		this.tools = {};
 		this.craftables = {
-			stick: new Craftable("ressource", "stick", 2, {wood: 1}),
-			plank: new Craftable("ressource", "plank", 4, {wood: 2}),
-			woodenAxe: new Craftable("item", "woodenAxe", 1, {plank: 3, stick: 2}),
-			woodenPickaxe: new Craftable("item", "woodenPickaxe", 1, {plank: 3, stick: 2}),
-			stoneAxe: new Craftable("item", "stoneAxe", 1, {stone: 3, stick: 2}),
-			stonePickaxe: new Craftable("item", "stonePickaxe", 1, {stone: 3, stick: 2})
+			stick: new Craftable("Ressource", "stick", 2, {wood: 1}),
+			plank: new Craftable("Ressource", "plank", 4, {wood: 2}),
+			woodenAxe: new Craftable("Tool", "woodenAxe", 1, {plank: 3, stick: 2}),
+			woodenPickaxe: new Craftable("Tool", "woodenPickaxe", 1, {plank: 3, stick: 2}),
+			stoneAxe: new Craftable("Tool", "stoneAxe", 1, {stone: 3, stick: 2}),
+			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
 		};
 		this.craftSelected;
+		this.playerInventory = new Inventory();
 		this.inventoryText;
 	}
 	
@@ -81,8 +81,8 @@ export class GameScene extends Phaser.Scene {
 		.setPosition(this.cameras.main.width * 0.02, this.cameras.main.height *0.20)
 		.setScrollFactor(0);
 		
-		Object.keys(this.resources).forEach((element) => {
-			this.inventoryText.appendText("\n" + element + " " + this.resources[element].quantity)
+		Object.keys(this.playerInventory.inventory).forEach((element) => {
+			this.inventoryText.appendText("\n" + element + " " + this.playerInventory.inventory[element].quantity)
 		});
 		
 		const craftButton = this.add.text(200, 300, 'Craft', { fontSize: '32px', fill: '#fff' })
@@ -221,11 +221,8 @@ export class GameScene extends Phaser.Scene {
 		}
 		
 		this.inventoryText.setText('');
-		Object.keys(this.resources).forEach((element) => {
-			this.inventoryText.appendText("\n" + element + " " + this.resources[element].quantity)
-		});
-		Object.keys(this.tools).forEach((element) => {
-			this.inventoryText.appendText("\n" + element + " " + this.tools[element].quantity)
+		Object.keys(this.playerInventory.inventory).forEach((element) => {
+			this.inventoryText.appendText("\n" + element + " " + this.playerInventory.inventory[element].quantity)
 		});
 	}
 	
@@ -357,87 +354,15 @@ export class GameScene extends Phaser.Scene {
 	}
 	
 	collectResource(type, quantity) {
-		if (!(type in this.resources))
-			switch (type){
-			case "wood":
-			this.resources.wood = new Ressource(type)
-			break;
-			case "stone":
-			this.resources.stone = new Ressource(type)
-			break;
-			default:
-			break;
-		}
-		
-		// Ajouter des ressources à la collecte globale
-		if (this.resources[type]) {
-			this.resources[type].add(quantity);
-			console.log(
-				`Ressource ${type} collectée: ${quantity}, total: ${this.resources[type].quantity}`
-			);
-		} else {
-			console.log(`Ressource ${type} non définie.`);
-		}
+		this.playerInventory.addItem("Ressource", type, quantity)
+		console.log(
+			`Ressource ${type} collectée: ${quantity}, total: ${this.playerInventory.inventory[type].quantity}`
+		);
 	}
 	
 	craftingLogic(){
-		switch (this.craftSelected) {
-			case "stick":
-				if (!this.craftables["stick"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("stick" in this.resources)){
-					this.resources.stick = new Ressource("stick")
-				}
-				this.craftables["stick"].craft(this.resources, this.resources)
-				break;
-			case "plank":
-				if (!this.craftables["plank"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("plank" in this.resources)){
-					this.resources.plank = new Ressource("plank")
-				}
-				this.craftables["plank"].craft(this.resources, this.resources)
-				break;
-			case "woodenAxe":
-				if (!this.craftables["woodenAxe"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("woodenAxe" in this.tools)){
-					this.tools.woodenAxe = new Tool("woodenAxe")
-				}
-				this.craftables["woodenAxe"].craft(this.resources, this.tools)
-				break;
-			case "woodenPickaxe":
-				if (!this.craftables["woodenPickaxe"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("woodenPickaxe" in this.tools)){
-					this.tools.woodenPickaxe = new Tool("woodenPickaxe")
-				}
-				this.craftables["woodenPickaxe"].craft(this.resources, this.tools)
-				break;
-			case "stoneAxe":
-				if (!this.craftables["stoneAxe"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("stoneAxe" in this.tools)){
-					this.tools.stoneAxe = new Tool("stoneAxe")
-				}
-				this.craftables["stoneAxe"].craft(this.resources, this.tools)
-				break;
-			case "stonePickaxe":
-				if (!this.craftables["stonePickaxe"].isCraftable(this.resources)){
-					break;
-				}
-				if(!("stonePickaxe" in this.tools)){
-					this.tools.stonePickaxe = new Tool("stonePickaxe")
-				}
-				this.craftables["stonePickaxe"].craft(this.resources, this.tools)
-				break;
-			default:
-				break;
+		if (this.craftables[this.craftSelected].isCraftable(this.playerInventory)){
+			this.craftables[this.craftSelected].craft(this.playerInventory, this.craftables[this.craftSelected].category)
 		}
 	}
 }
