@@ -1,6 +1,7 @@
 import Ressource from "../Classes/Ressource.js";
 import Farmable from "../Classes/Farmable.js";
 import HealthBar from "../Classes/HealthBar.js";
+import Ennemi from "../Classes/Ennemi.js";
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -16,12 +17,17 @@ export class GameScene extends Phaser.Scene {
     };
     this.resourcesGroup;
     this.playerHP;
+    this.ennemiMelee;
   }
 
   preload() {
     //load les sprites, sons, animations
+
+    //Player
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
+    //Ennemis
+    this.load.image("ennemi", "/assets/ennemi.png");
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
@@ -66,7 +72,7 @@ export class GameScene extends Phaser.Scene {
 
 
     //créer les instances
-    this.player = this.physics.add.sprite(0, 0, "player").setOrigin(0, 0);
+    this.player = this.physics.add.sprite(0, 0, "player");
     //this.player.setImmovable(true);
     this.player.body.allowGravity = false;
     this.cursor = this.input.keyboard.createCursorKeys();
@@ -90,6 +96,8 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-P", () => {
       this.playerHP.removeHealth(10);
     });
+
+    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi');
   }
 
   update() {
@@ -117,6 +125,8 @@ export class GameScene extends Phaser.Scene {
     if (this.playerHP.currentHealth <= 0) {
       this.scene.start("scene-menu");
     }
+
+    this.ennemiMelee.moveTowards(this.player, this.playerHP)
   }
 
   handlePlayerMovement() {
