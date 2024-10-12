@@ -17,6 +17,7 @@ export class MenuScene extends Phaser.Scene {
         const inputDisplayText = this.add.text(400, 300, '', { fontSize: '32px', fill: '#fff' })
         .setOrigin(0.5,0.5)
         .setPosition(this.cameras.main.width / 2, this.cameras.main.height * 0.6);
+        
 
         const displayText = this.add.text(400, 300, 'Entrez votre nom :', { fontSize: '32px', fill: '#fff' })
             .setOrigin(0.5,0.5)
@@ -55,7 +56,7 @@ export class MenuScene extends Phaser.Scene {
 
         startButton.on('pointerdown', () => {
             if(inputDisplayText.text !== ''){
-                this.scene.start('scene-game');
+                this.scene.start('scene-game',{ playerPseudo: inputText });
             }
         });
 

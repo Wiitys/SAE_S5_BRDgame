@@ -7,9 +7,10 @@ export class GameScene extends Phaser.Scene{
       //load les sprites, sons, animations
     }
   
-    create(){
+    create(data){
       //créer les instances
-      this.add.text(200, 300, 'Jeu en cours...', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
+      const pseudo = data.playerPseudo;
+      this.add.text(200, 300, `Jeu en cours... \npseudo choisi ${pseudo}`, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
     }
   
     update(){
