@@ -7,5 +7,18 @@ Comment utiliser le projet ?
 - dans le terminal :
     - cd Dev
     - npm install
+
+
+- installations côté serveur :
+    - cd server
+    - npm init -y
+    - npm install express socket.io
+    - cd ../Dev
+    - npm install socket.io-client
+ 
 - pour lancer le site :
+    - cd Dev
     - npm run dev
+- pour lancer le serveur, lancer un nouveau terminal :
+    - cd server
+    - node server.js
