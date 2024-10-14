@@ -1,3 +1,5 @@
+import { io } from 'socket.io-client';
+
 import Ressource from '../Classes/Ressource.js'
 import Farmable from '../Classes/Farmable.js'
 
