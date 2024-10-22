@@ -1,14 +1,17 @@
-import Ressource from "../Classes/Ressource.js";
-import Farmable from "../Classes/Farmable.js";
+import { io } from 'socket.io-client';
+
+import Ressource from '../Classes/Ressource.js'
+import Farmable from '../Classes/Farmable.js'
 import HealthBar from "../Classes/HealthBar.js";
 
-export class GameScene extends Phaser.Scene {
-  constructor() {
-    super("scene-game");
-    this.player;
-    this.cursor;
-    this.playerSpeed = 200;
-    this.farmableGroup;
+
+export class GameScene extends Phaser.Scene{
+  constructor(){
+    super("scene-game")
+    this.player
+    this.cursor
+    this.playerSpeed = 200
+    this.farmableGroup
     this.resources = {
       wood: new Ressource("wood"),
       stone: new Ressource("stone"),
