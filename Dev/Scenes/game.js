@@ -4,6 +4,9 @@ import Ressource from '../Classes/Ressource.js'
 import Farmable from '../Classes/Farmable.js'
 import HealthBar from "../Classes/HealthBar.js";
 
+var socket = io('http://localhost:3000');
+var otherPlayers = [];
+var otherPlayerSprites = [];
 
 export class GameScene extends Phaser.Scene{
   constructor(){
@@ -39,6 +42,7 @@ export class GameScene extends Phaser.Scene{
   }
 
   create() {
+
     //créer les instances
     this.player = this.physics.add.image(0, 0, "player").setOrigin(0, 0);
     this.player.setImmovable(true);
@@ -90,6 +94,26 @@ export class GameScene extends Phaser.Scene{
     }
     if (this.playerHP.currentHealth <= 0) {
       this.scene.start("scene-menu");
+    }
+
+    socket.emit('updatePlayers', {y: this.player.y, x: this.player.x});
+    socket.on('updatePlayers', function(data) {
+      if(otherPlayerSprites[0] != undefined){
+        for (const sprite of otherPlayerSprites) {
+          sprite.destroy(true)
+          otherPlayerSprites = [];
+        }
+      }
+      otherPlayers = data;
+    })
+
+    if (otherPlayers != null) {
+      for (let i = 0; i < otherPlayers.length; i++) {
+        if (otherPlayers[i].id != socket.id) {
+          var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+          otherPlayerSprites.push(newPlayer);
+        }
+      }
     }
   }
 
