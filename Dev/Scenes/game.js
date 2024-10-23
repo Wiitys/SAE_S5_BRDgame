@@ -7,6 +7,7 @@ import HealthBar from "../Classes/HealthBar.js";
 var socket = io('http://localhost:3000');
 var otherPlayers = [];
 var otherPlayerSprites = [];
+var existingFarmables = new Set();
 
 export class GameScene extends Phaser.Scene{
   constructor(){
@@ -44,7 +45,7 @@ export class GameScene extends Phaser.Scene{
   create() {
 
     //créer les instances
-    this.player = this.physics.add.image(0, 0, "player").setOrigin(0, 0);
+    this.player = this.physics.add.image(0, 0, "player");
     this.player.setImmovable(true);
     this.player.body.allowGravity = false;
     this.cursor = this.input.keyboard.createCursorKeys();
@@ -56,10 +57,7 @@ export class GameScene extends Phaser.Scene{
     // Initialiser le groupe des ressources
     this.resourceGroup = this.physics.add.group();
 
-    // Ajouter des farmables
-    this.createFarmable("tree", 200, 200);
-    this.createFarmable("tree", 300, 300);
-    this.createFarmable("rock", 100, 150);
+    this.syncFarmables();
 
     this.player.setDisplaySize(32, 32);
 
@@ -96,25 +94,7 @@ export class GameScene extends Phaser.Scene{
       this.scene.start("scene-menu");
     }
 
-    socket.emit('updatePlayers', {y: this.player.y, x: this.player.x});
-    socket.on('updatePlayers', function(data) {
-      if(otherPlayerSprites[0] != undefined){
-        for (const sprite of otherPlayerSprites) {
-          sprite.destroy(true)
-          otherPlayerSprites = [];
-        }
-      }
-      otherPlayers = data;
-    })
-
-    if (otherPlayers != null) {
-      for (let i = 0; i < otherPlayers.length; i++) {
-        if (otherPlayers[i].id != socket.id) {
-          var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
-          otherPlayerSprites.push(newPlayer);
-        }
-      }
-    }
+    this.updateOtherPlayers();
   }
 
   handlePlayerMovement() {
@@ -159,10 +139,11 @@ export class GameScene extends Phaser.Scene{
     }
   }
 
-  createFarmable(type, x, y) {
+  createFarmable(type, x, y, id) {
     // Créer une instance farmable
     const farmableElement = this.farmableGroup.create(x, y, type, 0);
     farmableElement.setOrigin(0, 0);
+    farmableElement.id = id;
 
     switch (type) {
       case "tree":
@@ -198,7 +179,8 @@ export class GameScene extends Phaser.Scene{
 
       if (farmable.isDestroyed()) {
         console.log(`${farmable.type} détruit !`);
-        farmableElement.destroy(); // Supprimer le farmable du jeu
+        socket.emit('destroyFarmable', farmableElement.id);
+        //farmableElement.destroy(); // Supprimer le farmable du jeu
       }
 
       this.createResource(
@@ -264,5 +246,62 @@ export class GameScene extends Phaser.Scene{
     } else {
       console.log(`Ressource ${type} non définie.`);
     }
+  }
+
+  updateOtherPlayers(){
+    socket.emit('updatePlayers', {y: this.player.y, x: this.player.x});
+    socket.on('updatePlayers', function(data) {
+      if(otherPlayerSprites[0] != undefined){
+        for (const sprite of otherPlayerSprites) {
+          sprite.destroy(true)
+          otherPlayerSprites = [];
+        }
+      }
+      otherPlayers = data;
+    })
+
+    if (otherPlayers != null) {
+      for (let i = 0; i < otherPlayers.length; i++) {
+        if (otherPlayers[i].id != socket.id) {
+          var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+          newPlayer.setImmovable(true);
+          newPlayer.body.allowGravity = false;
+          otherPlayerSprites.push(newPlayer);
+        }
+      }
+    }
+  }
+
+  syncFarmables() {
+    // Recevoir les farmables existants lors de la connexion
+    socket.on('farmableList', (farmables) => {
+        console.log('Liste des farmables reçue');
+        farmables.forEach(farmable => {
+          console.log('Farmable venant de liste reçu ' + farmable.id)
+          if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
+            this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id);
+            existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
+          }
+        });
+    });
+
+    socket.on('farmableCreated', (farmable) => {
+        console.log('Farmable créé reçu ' + farmable.id);
+        if (!existingFarmables.has(farmable.id)) {
+          this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id);
+          existingFarmables.add(farmable.id);
+        }
+    });
+
+    socket.emit('requestFarmables');
+
+    socket.on('farmableDestroyed', (farmableId) => {
+      // Logique pour détruire le farmable sur le client
+      const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+      if (farmableElement) {
+          farmableElement.destroy(); // Détruire l'élément visuel
+          console.log(`Farmable avec ID ${farmableId} détruit sur le client`);
+      }
+    });
   }
 }
