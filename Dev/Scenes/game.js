@@ -8,6 +8,7 @@ var socket = io('http://localhost:3000');
 var otherPlayers = [];
 var otherPlayerSprites = [];
 var existingFarmables = new Set();
+var existingResources = new Set();
 
 export class GameScene extends Phaser.Scene{
   constructor(){
@@ -139,7 +140,7 @@ export class GameScene extends Phaser.Scene{
     }
   }
 
-  createFarmable(type, x, y, id) {
+  createFarmable(type, x, y, id, hp) {
     // Créer une instance farmable
     const farmableElement = this.farmableGroup.create(x, y, type, 0);
     farmableElement.setOrigin(0, 0);
@@ -160,28 +161,16 @@ export class GameScene extends Phaser.Scene{
     }
 
     // Associer un objet Farmable à l'instance
-    farmableElement.farmableData = new Farmable(type, 10);
+    farmableElement.farmableData = new Farmable(type, hp);
   }
 
   hitFarmable(player, farmableElement) {
     const farmable = farmableElement.farmableData;
     const ressourceDrop = farmableElement.ressourceDrop;
 
+    
     if (farmable) {
-      farmable.hit(); // Infliger des dégâts
-
-      console.log(`HP restant pour ${farmable.type}: ${farmable.currentHp}`);
-
-      if (!farmable.hasSwapped && farmable.isHalfHp()) {
-        console.log(`${farmable.type} half hp !`);
-        this.farmableHalfHp(farmableElement, farmable.type);
-      }
-
-      if (farmable.isDestroyed()) {
-        console.log(`${farmable.type} détruit !`);
-        socket.emit('destroyFarmable', farmableElement.id);
-        //farmableElement.destroy(); // Supprimer le farmable du jeu
-      }
+      socket.emit('hitFarmable', farmableElement.id);
 
       this.createResource(
         ressourceDrop,
@@ -190,7 +179,6 @@ export class GameScene extends Phaser.Scene{
         farmableElement.displayWidth,
         farmableElement.displayHeight
       );
-      console.log();
     }
   }
 
@@ -279,7 +267,7 @@ export class GameScene extends Phaser.Scene{
         farmables.forEach(farmable => {
           console.log('Farmable venant de liste reçu ' + farmable.id)
           if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
-            this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id);
+            this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
             existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
           }
         });
@@ -288,12 +276,28 @@ export class GameScene extends Phaser.Scene{
     socket.on('farmableCreated', (farmable) => {
         console.log('Farmable créé reçu ' + farmable.id);
         if (!existingFarmables.has(farmable.id)) {
-          this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id);
+          this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
           existingFarmables.add(farmable.id);
         }
     });
 
     socket.emit('requestFarmables');
+
+    socket.on('farmableHit', (farmableId) => {
+      // Logique pour détruire le farmable sur le client
+      const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+
+      if (farmableElement) {
+          const farmable = farmableElement.farmableData;
+          farmable.hit(); // réduire les hp
+          console.log(`Farmable avec ID ${farmableId} hit sur le client hp=${farmable.currentHp} `);
+
+          if (!farmable.hasSwapped && farmable.isHalfHp()) {
+            console.log(`${farmable.type} half hp !`);
+            this.farmableHalfHp(farmableElement, farmable.type);
+          }
+      }
+    });
 
     socket.on('farmableDestroyed', (farmableId) => {
       // Logique pour détruire le farmable sur le client

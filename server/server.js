@@ -8,6 +8,7 @@ const path = require('path');
 var players = [];
 var farmables = [];
 let farmableCounter = 0;
+var ressources = [];
 
 // Configuration des farmables
 const FARMABLE_TYPES = ["tree", "rock"];
@@ -67,6 +68,21 @@ ioServer.on('connection', (socket) => {
         socket.emit('farmableList', farmables);
     });
 
+    socket.on('hitFarmable', (farmableId) => {
+        const index = farmables.findIndex(farmable => farmable.id === farmableId);
+        if (index !== -1) {
+            farmables[index].hp--;
+            
+            // Informer tous les clients de la destruction
+            ioServer.emit('farmableHit', farmableId);
+
+            if(farmables[index].hp == 0){
+                destroyFarmable(farmableId, index)
+            }
+        }
+    });
+
+    //REMOVED FOR FUNCTION
     socket.on('destroyFarmable', (farmableId) => {
         const index = farmables.findIndex(farmable => farmable.id === farmableId);
         if (index !== -1) {
@@ -84,19 +100,39 @@ ioServer.on('connection', (socket) => {
     });
 });
 
-function generateUniqueId() {
+function generateUniqueFarmableId() {
     return `farmable-${farmableCounter++}`; // Générer un ID unique basé sur un compteur
 }
 
 // Fonction pour créer un farmable
 function createFarmable(type, x, y) {
-    const farmableId = generateUniqueId(); // Fonction pour générer un ID unique
-    const farmable = { id: farmableId, type: type, x: x, y: y };
+    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, hp: 10 };
     farmables.push(farmable);
     ioServer.emit('farmableCreated', farmable);
 }
 
 function createInitialFarmables() {
-    farmables.push({ id: generateUniqueId(), type: "tree", x: 200, y: 200 });
-    farmables.push({ id: generateUniqueId(), type: "rock", x: 300, y: 300 });
+    farmables.push({ id: generateUniqueFarmableId(), type: "tree", x: 200, y: 200, hp: 10 });
+    farmables.push({ id: generateUniqueFarmableId(), type: "rock", x: 300, y: 300, hp: 10 });
+}
+
+function destroyFarmable(farmableId, index){
+    const farmable = farmables.splice(index, 1)[0];
+    console.log(`Farmable destroyed: ${farmableId}`);
+
+    // Informer tous les clients de la destruction
+    ioServer.emit('farmableDestroyed', farmableId);
+
+    // Réapparition après un délai
+    setTimeout(() => {
+        createFarmable(farmable.type, farmable.x, farmable.y);
+    }, 10000); // délai de 10 secondes
+}
+
+// Fonction pour créer une ressource
+function createResource(type, x, y) {
+    const ressourceId = generateUniqueId(); // Fonction pour générer un ID unique
+    const ressource = { id: ressourceId, type: type, x: x, y: y };
+    ressources.push(ressource);
+    ioServer.emit('ressourceCreated', ressource);
 }
