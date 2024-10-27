@@ -4,7 +4,7 @@ import Ressource from '../Classes/Ressource.js'
 import Farmable from '../Classes/Farmable.js'
 import HealthBar from "../Classes/HealthBar.js";
 
-var socket = io('http://localhost:3000');
+var socket
 var otherPlayers = [];
 var otherPlayerSprites = [];
 var existingFarmables = new Set();
@@ -26,6 +26,10 @@ export class GameScene extends Phaser.Scene{
         this.playerHP;
     }
     
+    init(data){
+        socket = data.socket
+    }
+
     preload() {
         //load les sprites, sons, animations
         this.load.image("player", "/assets/player.png");
@@ -60,6 +64,7 @@ export class GameScene extends Phaser.Scene{
         
         this.syncFarmables();
         this.syncResources();
+        socket.emit('playerState', { inGame: true });
         
         this.player.setDisplaySize(32, 32);
         
@@ -223,7 +228,7 @@ export class GameScene extends Phaser.Scene{
     }
     
     updateOtherPlayers(){
-        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x});
+        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.playerHP.currentHealth});
         socket.on('updatePlayers', function(data) {
             if(otherPlayerSprites[0] != undefined){
                 for (const sprite of otherPlayerSprites) {
@@ -236,12 +241,13 @@ export class GameScene extends Phaser.Scene{
         
         if (otherPlayers != null) {
             for (let i = 0; i < otherPlayers.length; i++) {
-                if (otherPlayers[i].id != socket.id) {
-                    var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
-                    newPlayer.setImmovable(true);
-                    newPlayer.body.allowGravity = false;
-                    otherPlayerSprites.push(newPlayer);
-                }
+                if(otherPlayers[i].id != socket.id)
+                    if (otherPlayers[i].inGame) {
+                        var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+                        newPlayer.setImmovable(true);
+                        newPlayer.body.allowGravity = false;
+                        otherPlayerSprites.push(newPlayer);
+                    }
             }
         }
     }
