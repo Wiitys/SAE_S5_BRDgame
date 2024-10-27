@@ -1,13 +1,11 @@
 import Ressource from "../Classes/Ressource.js";
 import Farmable from "../Classes/Farmable.js";
-import HealthBar from "../Classes/HealthBar.js";
+import Player from "../Classes/Player.js";
 
 export class GameScene extends Phaser.Scene {
   constructor() {
     super("scene-game");
-    this.player;
     this.cursor;
-    this.playerSpeed = 200;
     this.farmableGroup;
     this.resources = {
       wood: new Ressource("wood"),
@@ -15,7 +13,6 @@ export class GameScene extends Phaser.Scene {
       meat: new Ressource("meat"),
     };
     this.resourcesGroup;
-    this.playerHP;
   }
 
   preload() {
@@ -38,39 +35,9 @@ export class GameScene extends Phaser.Scene {
 
   create() {
 
-    // Animation pour la direction "side"
-    this.anims.create({
-      key: 'side', 
-      frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
-      frameRate: 10,
-      repeat: -1
-    });
-
-    // Animation pour aller vers le haut
-    this.anims.create({
-      key: 'up', 
-      frames: this.anims.generateFrameNumbers('player', { start: 6, end: 8 }),
-      frameRate: 10,
-      repeat: -1
-    });
-
-    // Animation pour aller vers le bas
-    this.anims.create({
-      key: 'down', 
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 2 }), 
-      frameRate: 10,
-      repeat: -1
-    });
-    
-    this.lastDirectionPlayer = 'up';
-
-
     //créer les instances
-    this.player = this.physics.add.sprite(0, 0, "player").setOrigin(0, 0);
-    //this.player.setImmovable(true);
-    this.player.body.allowGravity = false;
+    this.player = new Player(this, 0, 0);
     this.cursor = this.input.keyboard.createCursorKeys();
-
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
     // Créer le groupe de farmables
@@ -82,110 +49,14 @@ export class GameScene extends Phaser.Scene {
     this.createFarmable("tree", 200, 200);
     this.createFarmable("tree", 300, 300);
     this.createFarmable("rock", 100, 150);
-
-    this.player.setDisplaySize(32, 32);
-
-    this.playerHP = new HealthBar(this);
-
-    this.input.keyboard.on("keydown-P", () => {
-      this.playerHP.removeHealth(10);
-    });
   }
 
   update() {
     // Gestion des mouvements du joueur
-    this.handlePlayerMovement();
+    this.player.update();
 
     // Attaquer les farmables en appuyant sur "E"
-    if (
-      Phaser.Input.Keyboard.JustDown(
-        this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
-      )
-    ) {
-      // Vérifier la collision manuellement
-      this.farmableGroup.children.each((farmableElement) => {
-        if (
-          Phaser.Geom.Intersects.RectangleToRectangle(
-            this.player.getBounds(),
-            farmableElement.getBounds()
-          )
-        ) {
-          this.hitFarmable(this.player, farmableElement);
-        }
-      });
-    }
-    if (this.playerHP.currentHealth <= 0) {
-      this.scene.start("scene-menu");
-    }
-  }
-
-  handlePlayerMovement() {
-    //changements (mouvements, play anims, ...)
-    const { up, down, left, right } = this.cursor;
-
-    let velocityX = 0;
-    let velocityY = 0;
-
-    if (left.isDown && !right.isDown) {
-      velocityX = -this.playerSpeed;
-      this.lastDirectionPlayer = 'left';
-    } else if (right.isDown && !left.isDown) {
-      velocityX = this.playerSpeed;
-      this.lastDirectionPlayer = 'right';
-    }
-
-    // Déplacement vertical
-    if (up.isDown && !down.isDown) {
-      velocityY = -this.playerSpeed;
-      this.lastDirectionPlayer = 'up';
-
-    } else if (down.isDown && !up.isDown) {
-      velocityY = this.playerSpeed;
-      this.lastDirectionPlayer = 'down';  
-    }
-
-    if (this.lastDirectionPlayer === 'up') {
-      this.player.flipX = false;
-      this.player.play('up', true);
-    } else if (this.lastDirectionPlayer === 'down') {
-      this.player.flipX = false;
-        this.player.play('down', true); 
-    } else if (this.lastDirectionPlayer === 'left') {
-        this.player.flipX = true; 
-        this.player.play('side', true); 
-    } else if (this.lastDirectionPlayer === 'right') {
-        this.player.flipX = false;
-        this.player.play('side', true); 
-    }
-
-    // Si le joueur se déplace en diagonale, on normalise la vitesse
-    if (velocityX !== 0 && velocityY !== 0) {
-      // Pour garder la même vitesse en diagonale
-      const diagonalSpeed = this.playerSpeed / Math.sqrt(2); // Normalisation
-      velocityX = velocityX > 0 ? diagonalSpeed : -diagonalSpeed;
-      velocityY = velocityY > 0 ? diagonalSpeed : -diagonalSpeed;
-    }
-
-        // Si aucune touche n'est pressée, arrêter l'animation
-        if (velocityX === 0 && velocityY === 0) {
-          this.player.anims.stop();  
-          switch(this.lastDirectionPlayer){
-            case 'left':
-              this.player.setFrame(3);
-              break;
-            case 'right':
-              this.player.setFrame(3);
-              break;
-            case 'down':
-              this.player.setFrame(0);
-              break;
-            default:
-              this.player.setFrame(6);
-          }
-      }
-
-    // Applique les vitesses au joueur
-    this.player.setVelocity(velocityX, velocityY);
+    this.player.interactWithFarmable(this.farmableGroup);
   }
 
   // Méthode pour collecter une ressource
