@@ -39,29 +39,22 @@ createInitialFarmables()
 
 ioServer.on('connection', (socket) => {
     
-    players.push({ x: 0, y: 0, id: socket.id, inGame: false, hp: 100});
+    players.push({ x: 0, y: 0, id: socket.id, inGame: false, hp: 0});
     
     console.log(`A player connected: ${socket.id}`);
-
-    socket.on('playerState', (state) => {
-        // Marque le joueur comme inGame/inMenu
-        for(player of players) {
-            if(player.id == socket.id) {
-                player.inGame = state;
-            }
-        }
-    });
     
     socket.on('updatePlayers', function(data){
         for(player of players) {
             if(player.id == socket.id) {
                 player.x = data.x;
                 player.y = data.y;
-                player.hp = data.hp
+                player.hp = data.hp;
             }
 
             if(player.hp <= 0) {
-                player.inGame = false
+                player.inGame = false;
+            } else {
+                player.inGame = true;
             }
         }
         socket.emit('updatePlayers', players);
@@ -97,6 +90,11 @@ ioServer.on('connection', (socket) => {
         }
     });
 
+    /// Émettre la liste des resources à tous les joueurs
+    socket.on('requestResources', () => {
+        socket.emit('resourceList', resources);
+    });
+    
     socket.on('createResource', (resource) => {
         createResource(resource.type, resource.x, resource.y);
         console.log('create resource')

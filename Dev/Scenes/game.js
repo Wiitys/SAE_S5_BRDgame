@@ -1,14 +1,13 @@
-import { io } from 'socket.io-client';
-
 import Ressource from '../Classes/Ressource.js'
 import Farmable from '../Classes/Farmable.js'
 import HealthBar from "../Classes/HealthBar.js";
 
-var socket
-var otherPlayers = [];
-var otherPlayerSprites = [];
-var existingFarmables = new Set();
-var existingResources = new Set();
+import socket from '../Modules/socket.js';
+
+var otherPlayers;
+var otherPlayerSprites;
+var existingFarmables;
+var existingResources;
 
 export class GameScene extends Phaser.Scene{
     constructor(){
@@ -24,10 +23,6 @@ export class GameScene extends Phaser.Scene{
         };
         this.resourcesGroup;
         this.playerHP;
-    }
-    
-    init(data){
-        socket = data.socket
     }
 
     preload() {
@@ -48,6 +43,11 @@ export class GameScene extends Phaser.Scene{
     }
     
     create() {
+
+        otherPlayers = [];
+        otherPlayerSprites = [];
+        existingFarmables = new Set();
+        existingResources = new Set();
         
         //créer les instances
         this.player = this.physics.add.image(0, 0, "player");
@@ -64,7 +64,6 @@ export class GameScene extends Phaser.Scene{
         
         this.syncFarmables();
         this.syncResources();
-        socket.emit('playerState', { inGame: true });
         
         this.player.setDisplaySize(32, 32);
         
@@ -228,8 +227,11 @@ export class GameScene extends Phaser.Scene{
     }
     
     updateOtherPlayers(){
+        socket.off('updatePlayers');
+
         socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.playerHP.currentHealth});
-        socket.on('updatePlayers', function(data) {
+
+        socket.on('updatePlayers', (data) => {
             if(otherPlayerSprites[0] != undefined){
                 for (const sprite of otherPlayerSprites) {
                     sprite.destroy(true)
@@ -241,18 +243,26 @@ export class GameScene extends Phaser.Scene{
         
         if (otherPlayers != null) {
             for (let i = 0; i < otherPlayers.length; i++) {
-                if(otherPlayers[i].id != socket.id)
+                if(otherPlayers[i].id != socket.id) {
                     if (otherPlayers[i].inGame) {
                         var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
                         newPlayer.setImmovable(true);
                         newPlayer.body.allowGravity = false;
                         otherPlayerSprites.push(newPlayer);
                     }
+                }
             }
         }
     }
     
     syncFarmables() {
+        socket.off('farmableList');
+        socket.off('farmableCreated');
+        socket.off('farmableHit');
+        socket.off('farmableDestroyed');
+
+        socket.emit('requestFarmables');
+
         // Recevoir les farmables existants lors de la connexion
         socket.on('farmableList', (farmables) => {
             console.log('Liste des farmables reçue');
@@ -261,6 +271,7 @@ export class GameScene extends Phaser.Scene{
                 if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
                     this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
                     existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
+                    console.log('farmable trouvé')
                 }
             });
         });
@@ -272,9 +283,6 @@ export class GameScene extends Phaser.Scene{
                 existingFarmables.add(farmable.id);
             }
         });
-        
-        socket.emit('requestFarmables');
-        
         
         socket.on('farmableHit', (farmableId) => {
             // Logique pour détruire le farmable sur le client
@@ -305,6 +313,24 @@ export class GameScene extends Phaser.Scene{
     }
 
     syncResources() {
+        socket.off('resourceList');
+        socket.off('resourceCreated');
+        socket.off('resourceCollected');
+
+        socket.emit('requestResources');
+
+        // Recevoir les resources existants lors de la connexion
+        socket.on('resourceList', (resources) => {
+            console.log('Liste des resources reçue');
+            resources.forEach(resource => {
+                console.log('resource venant de liste reçu ' + resource.id)
+                if (!existingResources.has(resource.id)) { // Vérifier si la resource existe déjà
+                    this.createResource(resource.type, resource.x, resource.y, resource.id);
+                    existingResources.add(resource.id); // Ajouter l'ID à l'ensemble
+                }
+            });
+        });
+
         socket.on('resourceCreated', (resource) => {
             console.log('Resource créé reçue ' + resource.id);
             if (!existingResources.has(resource.id)) {
@@ -314,8 +340,7 @@ export class GameScene extends Phaser.Scene{
         });
         
         socket.on('resourceCollected', (resourceId) => {
-            // Logique pour détruire le farmable sur le client
-
+            // Logique pour détruire la ressource sur le client
             const resourceElement = this.resourceGroup.getChildren().find(resource => resource.id === resourceId);
             if (resourceElement) {
                 resourceElement.destroy(); // Détruire l'élément visuel

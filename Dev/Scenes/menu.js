@@ -1,20 +1,15 @@
-import { io } from 'socket.io-client';
-
-var socket = io('http://localhost:3000');
+import socket from '../Modules/socket.js';
 
 export class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'scene-menu' });
     }
 
-
     preload() {
         // Charger des ressources si nécessaire (par exemple des images pour les boutons)
     }
 
     create() {
-        socket.emit('playerState', { inGame: false });
-
         let inputText = '';
         const title = this.add.text(400, 300, 'BRDGame', { fontSize: '48px', fill: '#fff' })
         .setOrigin(0.5, 0.5)
@@ -61,7 +56,7 @@ export class MenuScene extends Phaser.Scene {
 
         startButton.on('pointerdown', () => {
             if(inputDisplayText.text !== ''){
-                this.scene.start('scene-game', { socket });
+                this.scene.start('scene-game');
             }
         });
 
