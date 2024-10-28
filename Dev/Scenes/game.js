@@ -3,6 +3,8 @@ import Farmable from "../Classes/Farmable.js";
 import HealthBar from "../Classes/HealthBar.js";
 import Ennemi from "../Classes/Ennemi.js";
 
+var playerList = [];
+
 export class GameScene extends Phaser.Scene {
   constructor() {
     super("scene-game");
@@ -28,6 +30,7 @@ export class GameScene extends Phaser.Scene {
 
     //Ennemis
     this.load.image("ennemi", "/assets/ennemi.png");
+	this.load.image("projectileTexture", "/assets/projectileTexture.png");
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
@@ -43,7 +46,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-
+	playerList.push(this.player)
     // Animation pour la direction "side"
     this.anims.create({
       key: 'side', 
@@ -97,7 +100,7 @@ export class GameScene extends Phaser.Scene {
       this.playerHP.removeHealth(10);
     });
 
-    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi');
+    this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 100, 50, 150, 300, 2000);
   }
 
   update() {
@@ -126,7 +129,7 @@ export class GameScene extends Phaser.Scene {
       this.scene.start("scene-menu");
     }
 
-    this.ennemiMelee.moveTowards(this.player, this.playerHP)
+    this.ennemiRanged.getClosestTarget(this.player)
   }
 
   handlePlayerMovement() {
