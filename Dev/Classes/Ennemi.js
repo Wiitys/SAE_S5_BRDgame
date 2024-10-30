@@ -1,5 +1,5 @@
 export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, texture, type = 'melee', hp = 100, speed = 50, attackRange = 50, searchRange = 200, actionDelay = 3000) {
+    constructor(scene, x, y, texture, type = 'melee', hp = 100, speed = 50, attackRange = 100, searchRange = 200, actionDelay = 3000) {
         super(scene, x, y, texture);
 
         // Ajout à la scène
@@ -21,7 +21,10 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
         this.targetList;
         this.distanceToTarget;
 
-        if (type === 'ranged') {
+        if (type === 'melee') {
+            this.meleeEffects = scene.physics.add.group();
+        }
+        else {
             this.projectiles = scene.physics.add.group();
         }
 
@@ -30,7 +33,7 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Méthode pour déplacer l'ennemi
-    moveTowards() {
+    moveTowards(player) {
         // Calcule la distance entre l'ennemi et le joueur
         this.distanceToTarget = Phaser.Math.Distance.Between(
             this.x + this.width / 2, this.y + this.height / 2,  // Centre de l'ennemi
@@ -93,16 +96,28 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
     attack() {
         
         if(this.distanceToTarget < this.maxAttackRange) {
+
+            const directionX = this.target.x - this.x;
+            const directionY = this.target.y - this.y;
+            const magnitude = Math.sqrt(directionX * directionX + directionY * directionY);
+
+            // Normalise le vecteur direction pour garder la même vitesse dans toutes les directions
+            const normalizedX = directionX / magnitude;
+            const normalizedY = directionY / magnitude;
+
             switch (this.type){
                 case 'melee':
-                    //console.log("attaque lancée");
-                    //playerHP.removeHealth(10);
-                    //animations d'attaque de melee
+                    const meleeX = this.x + normalizedX * 20; // Ajuste "20" pour la distance de l'attaque
+                    const meleeY = this.y + normalizedY * 20;
+                    console.log("attaque lancée");
+                    this.meleeAttack(meleeX, meleeY)
                     break;
 
                 case 'ranged':
+                    const projectileX = this.x + normalizedX * 20;
+                    const projectileY = this.y + normalizedY * 20;
                     console.log("attaque lancée");
-                    this.launchProjectile()
+                    this.launchProjectile(projectileX, projectileY)
                     break;
 
                 default:
@@ -114,8 +129,29 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    launchProjectile() {
-        const projectile = this.projectiles.create(this.x, this.y, 'projectileTexture'); // Sprite pour le projectile
+    meleeAttack(x, y) {
+        const effect = this.meleeEffects.create(x, y, 'meleeTexture'); // Sprite pour le projectile
+    
+        // Gérer la collision avec chaque cible dans `this.targetList`
+        this.scene.physics.add.collider(effect, this.target, () => {
+            // Actions lors de la collision avec la cible
+            if (this.target.takeDamage) {
+                this.target.takeDamage(10); // Inflige des dégâts si la cible a une méthode `takeDamage`
+            }
+            this.scene.physics.world.removeCollider(collider);
+            console.log('cible touchée')
+        });
+    
+        // Détruire le projectile après un délai s'il ne touche rien
+        this.scene.time.delayedCall(500, () => {
+            if (effect.active) {
+                effect.destroy();
+            }
+        });
+    }
+
+    launchProjectile(x, y) {
+        const projectile = this.projectiles.create(x, y, 'projectileTexture'); // Sprite pour le projectile
         this.scene.physics.moveTo(projectile, this.target.x, this.target.y, 100); // Vitesse du projectile
     
         // Gérer la collision avec chaque cible dans `this.targetList`

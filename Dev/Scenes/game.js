@@ -30,7 +30,8 @@ export class GameScene extends Phaser.Scene {
 
     //Ennemis
     this.load.image("ennemi", "/assets/ennemi.png");
-	this.load.image("projectileTexture", "/assets/projectileTexture.png");
+	  this.load.image("projectileTexture", "/assets/projectileTexture.png");
+    this.load.image("meleeTexture", "/assets/meleeTexture.png");
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
@@ -101,6 +102,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 100, 50, 150, 300, 2000);
+    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi');
   }
 
   update() {
@@ -130,6 +132,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.ennemiRanged.getClosestTarget(this.player)
+    this.ennemiMelee.getClosestTarget(this.player)
   }
 
   handlePlayerMovement() {
