@@ -54,10 +54,7 @@ export class GameScene extends Phaser.Scene {
   update() {
     // Gestion des mouvements du joueur
     this.player.update();
-
-    // Attaquer les farmables en appuyant sur "E"
-    this.player.interactWithFarmable(this.farmableGroup);
-  }
+   }
 
   // Méthode pour collecter une ressource
   collectResource(resourceType, quantity) {

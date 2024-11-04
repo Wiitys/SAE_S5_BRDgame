@@ -1,4 +1,6 @@
 import HealthBar from "../Classes/HealthBar.js";
+import Farmable from "../Classes/Farmable.js";
+
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -16,11 +18,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Paramètres et contrôles du joueur
     this.playerSpeed = 200;
     this.lastDirection = "up";
+    this.isEquipped = false;
     this.cursor = scene.input.keyboard.createCursorKeys();
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
+
+    // Paramètres d'attaque en cône
+    this.attackConeAngle = Phaser.Math.DegToRad(45);
+    this.attackRange = 50; 
+    this.attackDamageEntities = 1;
+    this.attackDamageFarmables = 1;
+
+    // Création d'un graphique pour afficher la hitbox du cône
+    this.attackConeGraphic = scene.add.graphics({ lineStyle: { width: 2, color: 0xff0000 } });
 
     // Charger les animations
     this.loadAnimations();
@@ -131,10 +144,91 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         break;
     }
   }
+// Méthode de gestion d'attaque en cône
+attackCone(attackRange = this.attackRange, attackConeAngle = this.attackConeAngle, attackDamageFarmables = this.attackDamageFarmables, attackDamageEntities = this.attackDamageEntities) {
 
+  // Calculer le centre de la hitbox du joueur
+  const { centerX, centerY } = this.getBounds();
+
+  // Obtenir l'angle d'attaque en fonction de la dernière direction
+  const attackRotation = this.getAttackRotation();
+
+  // Afficher le cône d'attaque
+  this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
+
+  // Liste des cibles potentielles
+  const farmables = this.scene.farmableGroup.getChildren();
+  
+  // Vérifier les collisions dans le cône pour chaque type de cible
+  farmables.forEach(target => {
+    // Obtenir les coins de la bounding box de la cible
+    const targetBounds = target.getBounds();
+    const targetPoints = [
+      { x: targetBounds.left, y: targetBounds.top },    // coin supérieur gauche
+      { x: targetBounds.right, y: targetBounds.top },   // coin supérieur droit
+      { x: targetBounds.right, y: targetBounds.bottom }, // coin inférieur droit
+      { x: targetBounds.left, y: targetBounds.bottom }  // coin inférieur gauche
+    ];
+
+    // Vérifier si au moins un point de la bounding box est dans le cône
+    const isTargetInCone = targetPoints.some(point => {
+      const dx = point.x - centerX;
+      const dy = point.y - centerY;
+      const distance = Phaser.Math.Distance.Between(centerX, centerY, point.x, point.y);
+
+      // Vérifier la distance par rapport au range
+      if (distance <= attackRange) {
+        const TargetAngle = Math.atan2(dy, dx);
+        const angleDifference = Phaser.Math.Angle.Wrap(TargetAngle - attackRotation);
+
+        // Vérifier si le point est dans l'angle d'attaque
+        return Math.abs(angleDifference) <= attackConeAngle;
+      }
+      return false;
+    });
+
+    // Si la bounding box de la cible est dans le cône, appliquer l'attaque
+    if (isTargetInCone) {
+      this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
+    }
+  });
+}
+
+  // Méthode pour afficher la hitbox du cône avec des paramètres passés
+  showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle) {
+    this.attackConeGraphic.clear(); // Effacer les anciens dessins
+
+    // Définir les angles de début et de fin du cône d'attaque
+    const startAngle = attackRotation - attackConeAngle / 2;
+    const endAngle = attackRotation + attackConeAngle / 2;
+
+    // Dessiner le cône
+    this.attackConeGraphic.beginPath();
+    this.attackConeGraphic.moveTo(centerX, centerY);
+    this.attackConeGraphic.arc(centerX, centerY, attackRange, startAngle, endAngle, false);
+    this.attackConeGraphic.closePath();
+    this.attackConeGraphic.strokePath();
+
+    // Effacer la hitbox après un court délai (par exemple, 200 ms)
+    this.scene.time.delayedCall(200, () => this.attackConeGraphic.clear(), [], this);
+  }
+
+    // Calculer l’angle d’attaque basé sur la dernière direction
+  getAttackRotation() {
+    switch (this.lastDirection) {
+      case "up":
+        return -Math.PI / 2;
+      case "down":
+        return Math.PI / 2;
+      case "left":
+        return Math.PI;
+      case "right":
+        return 0;
+    }
+  }
+  
   // Interaction avec les farmables
   interactWithFarmable(farmableGroup) {
-    if (Phaser.Input.Keyboard.JustDown(this.EKey)) {
       farmableGroup.children.each((farmableElement) => {
         if (
           Phaser.Geom.Intersects.RectangleToRectangle(
@@ -145,11 +239,28 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
           this.scene.hitFarmable(this, farmableElement);
         }
       });
-    }
+  }
+  
+  // Gestion des effets d’une attaque sur une cible
+  hitTarget(target, attackDamageFarmables, attackDamageEntities) {
+    this.scene.hitFarmable(this, target);
+    /* else if (target.isEnemy) {
+      target.takeDamage(10); 
+    } else if (target.isPlayer) {
+      target.takeDamage(5);
+    }*/
   }
 
   update() {
     this.handleMovement();
+
+    if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
+      if(this.isEquipped){
+        //
+      }else{
+        this.attackCone();
+      }
+    }
 
     if (this.playerHP.currentHealth <= 0) {
       this.scene.scene.start("scene-menu");
