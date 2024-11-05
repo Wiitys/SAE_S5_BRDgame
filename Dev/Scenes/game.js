@@ -2,6 +2,13 @@ import Ressource from "../Classes/Ressource.js";
 import Farmable from "../Classes/Farmable.js";
 import Player from "../Classes/Player.js";
 
+import socket from '../Modules/socket.js';
+
+var otherPlayers;
+var otherPlayerSprites;
+var existingFarmables;
+var existingResources;
+
 export class GameScene extends Phaser.Scene {
   constructor() {
     super("scene-game");
@@ -40,136 +47,239 @@ export class GameScene extends Phaser.Scene {
     this.cursor = this.input.keyboard.createCursorKeys();
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
+    otherPlayers = [];
+    otherPlayerSprites = [];
+    existingFarmables = new Set();
+    existingResources = new Set();
+    
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
     // Initialiser le groupe des ressources
     this.resourceGroup = this.physics.add.group();
 
-    // Ajouter des farmables
-    this.createFarmable("tree", 200, 200);
-    this.createFarmable("tree", 300, 300);
-    this.createFarmable("rock", 100, 150);
+    this.syncFarmables();
+    this.syncResources();
   }
 
   update() {
     // Gestion des mouvements du joueur
     this.player.update();
+    this.updateOtherPlayers();
    }
 
-  // Méthode pour collecter une ressource
-  collectResource(resourceType, quantity) {
-    if (this.resources[resourceType]) {
-      this.resources[resourceType].add(quantity);
-      console.log(
-        `${quantity} ${resourceType} ajouté. Total : ${this.resources[resourceType].quantity}`
-      );
+    
+    createFarmable(type, x, y, id, hp) {
+        // Créer une instance farmable
+        const farmableElement = this.farmableGroup.create(x, y, type, 0);
+        farmableElement.setOrigin(0, 0);
+        farmableElement.id = id;
+        
+        switch (type) {
+            case "tree":
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.ressourceDrop = "wood";
+            break;
+            case "rock":
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.ressourceDrop = "stone";
+            break;
+            default:
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.ressourceDrop = "wood";
+        }
+        
+        // Associer un objet Farmable à l'instance
+        farmableElement.farmableData = new Farmable(type, hp);
     }
-  }
+    
+    hitFarmable(player, farmableElement) {
+        const farmable = farmableElement.farmableData;
+        const ressourceDrop = farmableElement.ressourceDrop;
+        
+        
+        if (farmable) {
+            socket.emit('hitFarmable', farmableElement.id);
 
-  createFarmable(type, x, y) {
-    // Créer une instance farmable
-    const farmableElement = this.farmableGroup.create(x, y, type, 0);
-    farmableElement.setOrigin(0, 0);
+            const resource = {
+                type: ressourceDrop,
+                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+            }
 
-    switch (type) {
-      case "tree":
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "wood";
-        break;
-      case "rock":
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "stone";
-        break;
-      default:
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "wood";
+            socket.emit('createResource', resource);
+        }
+    }
+    
+    farmableHalfHp(farmableElement, type){
+        switch (type) {
+            case "tree":
+            farmableElement.setFrame(1);
+            break;
+            case "rock":
+            //farmableElement.setFrame(1);  pas encore fait
+            break;
+            default:
+            farmableElement.setFrame(1);
+        }
+    }
+    
+    createResource(type, x, y, id) {
+        
+        // Créer une instance de ressource dans le groupe à la position générée
+        const resourceElement = this.resourceGroup.create(
+            x,
+            y,
+            type
+        );
+        resourceElement.id = id;
+        resourceElement.setDisplaySize(30, 30);
+        resourceElement.resourceData = new Ressource(type, 1);
+        // Ajouter une physique de collision pour permettre la collecte
+        this.physics.add.overlap(
+            this.player,
+            resourceElement,
+            () => {
+                // Quand le joueur marche sur la ressource, elle est collectée
+                this.collectResource(type, 1, id);
+                resourceElement.destroy();
+            },
+            null,
+            this
+        );
+    }
+    
+    collectResource(type, quantity, id) {
+        // Ajouter des ressources à la collecte globale
+        if (this.resources[type]) {
+            this.resources[type].add(quantity);
+            console.log(`${id} ${type} collectée: ${quantity}, total: ${this.resources[type].quantity}`);
+            socket.emit('collectResource', id);
+        } else {
+            console.log(`Ressource ${type} non définie.`);
+        }
+    }
+    
+    updateOtherPlayers(){
+        socket.off('updatePlayers');
+
+        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.playerHP.currentHealth});
+
+        socket.on('updatePlayers', (data) => {
+            if(otherPlayerSprites[0] != undefined){
+                for (const sprite of otherPlayerSprites) {
+                    sprite.destroy(true)
+                    otherPlayerSprites = [];
+                }
+            }
+            otherPlayers = data;
+        })
+        
+        if (otherPlayers != null) {
+            for (let i = 0; i < otherPlayers.length; i++) {
+                if(otherPlayers[i].id != socket.id) {
+                    if (otherPlayers[i].inGame) {
+                        var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+                        newPlayer.setImmovable(true);
+                        newPlayer.body.allowGravity = false;
+                        otherPlayerSprites.push(newPlayer);
+                    }
+                }
+            }
+        }
+    }
+    
+    syncFarmables() {
+        socket.off('farmableList');
+        socket.off('farmableCreated');
+        socket.off('farmableHit');
+        socket.off('farmableDestroyed');
+
+        socket.emit('requestFarmables');
+
+        // Recevoir les farmables existants lors de la connexion
+        socket.on('farmableList', (farmables) => {
+            console.log('Liste des farmables reçue');
+            farmables.forEach(farmable => {
+                console.log('Farmable venant de liste reçu ' + farmable.id)
+                if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
+                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                    existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
+                    console.log('farmable trouvé')
+                }
+            });
+        });
+        
+        socket.on('farmableCreated', (farmable) => {
+            console.log('Farmable créé reçu ' + farmable.id);
+            if (!existingFarmables.has(farmable.id)) {
+                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                existingFarmables.add(farmable.id);
+            }
+        });
+        
+        socket.on('farmableHit', (farmableId) => {
+            // Logique pour détruire le farmable sur le client
+            const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+            if (farmableElement) {
+                const farmable = farmableElement.farmableData;
+                farmable.hit(); // réduire les hp
+                console.log(`Farmable avec ID ${farmableId} hit sur le client hp=${farmable.currentHp} `);
+                
+                if (!farmable.hasSwapped && farmable.isHalfHp()) {
+                    console.log(`${farmable.type} half hp !`);
+                    this.farmableHalfHp(farmableElement, farmable.type);
+                }
+            }
+            console.log(existingFarmables)
+        });
+        
+        socket.on('farmableDestroyed', (farmableId) => {
+            // Logique pour détruire le farmable sur le client
+            const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+            if (farmableElement) {
+                farmableElement.destroy(); // Détruire l'élément visuel
+                console.log(`Farmable avec ID ${farmableId} détruit sur le client`);
+                existingFarmables.delete(farmableId)
+            }
+            console.log(existingFarmables)
+        });
     }
 
-    // Associer un objet Farmable à l'instance
-    farmableElement.farmableData = new Farmable(type, 10);
-  }
+    syncResources() {
+        socket.off('resourceList');
+        socket.off('resourceCreated');
+        socket.off('resourceCollected');
 
-  hitFarmable(player, farmableElement) {
-    const farmable = farmableElement.farmableData;
-    const ressourceDrop = farmableElement.ressourceDrop;
+        socket.emit('requestResources');
 
-    if (farmable) {
-      farmable.hit(); // Infliger des dégâts
+        // Recevoir les resources existants lors de la connexion
+        socket.on('resourceList', (resources) => {
+            console.log('Liste des resources reçue');
+            resources.forEach(resource => {
+                console.log('resource venant de liste reçu ' + resource.id)
+                if (!existingResources.has(resource.id)) { // Vérifier si la resource existe déjà
+                    this.createResource(resource.type, resource.x, resource.y, resource.id);
+                    existingResources.add(resource.id); // Ajouter l'ID à l'ensemble
+                }
+            });
+        });
 
-      console.log(`HP restant pour ${farmable.type}: ${farmable.currentHp}`);
-
-      if (!farmable.hasSwapped && farmable.isHalfHp()) {
-        console.log(`${farmable.type} half hp !`);
-        this.farmableHalfHp(farmableElement, farmable.type);
-      }
-
-      if (farmable.isDestroyed()) {
-        console.log(`${farmable.type} détruit !`);
-        farmableElement.destroy(); // Supprimer le farmable du jeu
-      }
-
-      this.createResource(
-        ressourceDrop,
-        farmableElement.x + farmableElement.displayWidth / 2,
-        farmableElement.y + farmableElement.displayHeight / 2,
-        farmableElement.displayWidth,
-        farmableElement.displayHeight
-      );
-      console.log();
+        socket.on('resourceCreated', (resource) => {
+            console.log('Resource créé reçue ' + resource.id);
+            if (!existingResources.has(resource.id)) {
+                this.createResource(resource.type, resource.x, resource.y, resource.id);
+                existingResources.add(resource.id);
+            }
+        });
+        
+        socket.on('resourceCollected', (resourceId) => {
+            // Logique pour détruire la ressource sur le client
+            const resourceElement = this.resourceGroup.getChildren().find(resource => resource.id === resourceId);
+            if (resourceElement) {
+                resourceElement.destroy(); // Détruire l'élément visuel
+                console.log(`Resource avec ID ${resourceId} collecté sur le client`);
+                existingResources.delete(resourceId)
+            }
+        });
     }
-  }
-
-  farmableHalfHp(farmableElement, type){
-    switch (type) {
-      case "tree":
-        farmableElement.setFrame(1);
-        break;
-      case "rock":
-        //farmableElement.setFrame(1);  pas encore fait
-        break;
-      default:
-        farmableElement.setFrame(1);
-    }
-  }
-
-  createResource(type, x, y, sizeX, sizeY) {
-    // Générer des positions aléatoires autour du farmable
-    const offsetX = Phaser.Math.Between(-sizeX, sizeX); // Décalage horizontal aléatoire
-    const offsetY = Phaser.Math.Between(-sizeY, sizeY); // Décalage vertical aléatoire
-    const resourceX = x + offsetX;
-    const resourceY = y + offsetY;
-
-    // Créer une instance de ressource dans le groupe à la position générée
-    const resourceElement = this.resourceGroup.create(
-      resourceX,
-      resourceY,
-      type
-    );
-    resourceElement.setDisplaySize(30, 30);
-
-    // Ajouter une physique de collision pour permettre la collecte
-    this.physics.add.overlap(
-      this.player,
-      resourceElement,
-      (player, resource) => {
-        // Quand le joueur marche sur la ressource, elle est collectée
-        this.collectResource(type, 1); // Ajouter la ressource à la collection
-        resource.destroy(); // Supprimer la ressource visuelle après collecte
-      },
-      null,
-      this
-    );
-  }
-
-  collectResource(type, quantity) {
-    // Ajouter des ressources à la collecte globale
-    if (this.resources[type]) {
-      this.resources[type].add(quantity);
-      console.log(
-        `Ressource ${type} collectée: ${quantity}, total: ${this.resources[type].quantity}`
-      );
-    } else {
-      console.log(`Ressource ${type} non définie.`);
-    }
-  }
 }
