@@ -101,8 +101,8 @@ export class GameScene extends Phaser.Scene {
       this.playerHP.removeHealth(10);
     });
 
-    this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 100, 50, 150, 300, 2000);
-    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi');
+    this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
+    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
   }
 
   update() {
