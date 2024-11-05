@@ -162,7 +162,7 @@ export class GameScene extends Phaser.Scene {
     updateOtherPlayers(){
         socket.off('updatePlayers');
 
-        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.playerHP.currentHealth});
+        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
 
         socket.on('updatePlayers', (data) => {
             if(otherPlayerSprites[0] != undefined){
