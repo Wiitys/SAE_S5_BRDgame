@@ -1,6 +1,6 @@
-import Ressource from '../Classes/Ressource.js'
-import Farmable from '../Classes/Farmable.js'
-import HealthBar from "../Classes/HealthBar.js";
+import Ressource from "../Classes/Ressource.js";
+import Farmable from "../Classes/Farmable.js";
+import Player from "../Classes/Player.js";
 
 import socket from '../Modules/socket.js';
 
@@ -9,131 +9,64 @@ var otherPlayerSprites;
 var existingFarmables;
 var existingResources;
 
-export class GameScene extends Phaser.Scene{
-    constructor(){
-        super("scene-game")
-        this.player
-        this.cursor
-        this.playerSpeed = 200
-        this.farmableGroup
-        this.resources = {
-            wood: new Ressource("wood"),
-            stone: new Ressource("stone"),
-            meat: new Ressource("meat"),
-        };
-        this.resourcesGroup;
-        this.playerHP;
-    }
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super("scene-game");
+    this.cursor;
+    this.farmableGroup;
+    this.resources = {
+      wood: new Ressource("wood"),
+      stone: new Ressource("stone"),
+      meat: new Ressource("meat"),
+    };
+    this.resourcesGroup;
+  }
 
-    preload() {
-        //load les sprites, sons, animations
-        this.load.image("player", "/assets/player.png");
-        
-        //farmables
-        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
-            frameWidth: 32,  // largeur de chaque frame
-            frameHeight: 32  // hauteur de chaque frame
-        });
-        this.load.image("rock", "/assets/rock.png");
-        
-        //ressources
-        this.load.image("wood", "/assets/wood.png");
-        this.load.image("stone", "/assets/stone.png");
-        this.load.image("meat", "/assets/meat.png");
-    }
-    
-    create() {
+  preload() {
+    //load les sprites, sons, animations
+    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
-        otherPlayers = [];
-        otherPlayerSprites = [];
-        existingFarmables = new Set();
-        existingResources = new Set();
-        
-        //créer les instances
-        this.player = this.physics.add.image(0, 0, "player");
-        this.player.setImmovable(true);
-        this.player.body.allowGravity = false;
-        this.cursor = this.input.keyboard.createCursorKeys();
-        
-        this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
-        
-        // Créer le groupe de farmables
-        this.farmableGroup = this.physics.add.group();
-        // Initialiser le groupe des ressources
-        this.resourceGroup = this.physics.add.group();
-        
-        this.syncFarmables();
-        this.syncResources();
-        
-        this.player.setDisplaySize(32, 32);
-        
-        this.playerHP = new HealthBar(this);
-        
-        this.input.keyboard.on("keydown-P", () => {
-            this.playerHP.removeHealth(10);
-        });
-    }
+
+    //farmables
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
+      frameWidth: 32,  // largeur de chaque frame
+      frameHeight: 32  // hauteur de chaque frame
+    });
+    this.load.image("rock", "/assets/rock.png");
+
+    //ressources
+    this.load.image("wood", "/assets/wood.png");
+    this.load.image("stone", "/assets/stone.png");
+    this.load.image("meat", "/assets/meat.png");
+  }
+
+  create() {
+
+    //créer les instances
+    this.player = new Player(this, 0, 0);
+    this.cursor = this.input.keyboard.createCursorKeys();
+    this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
+
+    otherPlayers = [];
+    otherPlayerSprites = [];
+    existingFarmables = new Set();
+    existingResources = new Set();
     
-    update() {
-        // Gestion des mouvements du joueur
-        this.handlePlayerMovement();
-        
-        // Attaquer les farmables en appuyant sur "E"
-        if (
-            Phaser.Input.Keyboard.JustDown(
-                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
-            )
-        ) {
-            // Vérifier la collision manuellement
-            this.farmableGroup.children.each((farmableElement) => {
-                if (
-                    Phaser.Geom.Intersects.RectangleToRectangle(
-                        this.player.getBounds(),
-                        farmableElement.getBounds()
-                    )
-                ) {
-                    this.hitFarmable(this.player, farmableElement);
-                }
-            });
-        }
-        if (this.playerHP.currentHealth <= 0) {
-            this.scene.start("scene-menu");
-        }
-        
-        this.updateOtherPlayers();
-    }
-    
-    handlePlayerMovement() {
-        //changements (mouvements, play anims, ...)
-        const { up, down, left, right } = this.cursor;
-        
-        let velocityX = 0;
-        let velocityY = 0;
-        
-        if (left.isDown && !right.isDown) {
-            velocityX = -this.playerSpeed;
-        } else if (right.isDown && !left.isDown) {
-            velocityX = this.playerSpeed;
-        }
-        
-        // Déplacement vertical
-        if (up.isDown && !down.isDown) {
-            velocityY = -this.playerSpeed;
-        } else if (down.isDown && !up.isDown) {
-            velocityY = this.playerSpeed;
-        }
-        
-        // Si le joueur se déplace en diagonale, on normalise la vitesse
-        if (velocityX !== 0 && velocityY !== 0) {
-            // Pour garder la même vitesse en diagonale
-            const diagonalSpeed = this.playerSpeed / Math.sqrt(2); // Normalisation
-            velocityX = velocityX > 0 ? diagonalSpeed : -diagonalSpeed;
-            velocityY = velocityY > 0 ? diagonalSpeed : -diagonalSpeed;
-        }
-        
-        // Applique les vitesses au joueur
-        this.player.setVelocity(velocityX, velocityY);
-    }
+    // Créer le groupe de farmables
+    this.farmableGroup = this.physics.add.group();
+    // Initialiser le groupe des ressources
+    this.resourceGroup = this.physics.add.group();
+
+    this.syncFarmables();
+    this.syncResources();
+  }
+
+  update() {
+    // Gestion des mouvements du joueur
+    this.player.update();
+    this.updateOtherPlayers();
+   }
+
     
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
@@ -229,7 +162,7 @@ export class GameScene extends Phaser.Scene{
     updateOtherPlayers(){
         socket.off('updatePlayers');
 
-        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.playerHP.currentHealth});
+        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
 
         socket.on('updatePlayers', (data) => {
             if(otherPlayerSprites[0] != undefined){
