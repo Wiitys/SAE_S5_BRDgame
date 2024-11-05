@@ -1,8 +1,8 @@
 import HealthBar from "../Classes/HealthBar.js";
 import Farmable from "../Classes/Farmable.js";
 
-
 export default class Player extends Phaser.Physics.Arcade.Sprite {
+
   constructor(scene, x, y) {
     super(scene, x, y, "player");
     
@@ -16,6 +16,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.allowGravity = false;
     
     // Paramètres et contrôles du joueur
+    this.isPlayer = true;
+    this.damageReduction = 0;
     this.playerSpeed = 200;
     this.lastDirection = "up";
     this.isEquipped = false;
@@ -144,55 +146,55 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         break;
     }
   }
-// Méthode de gestion d'attaque en cône
-attackCone(attackRange = this.attackRange, attackConeAngle = this.attackConeAngle, attackDamageFarmables = this.attackDamageFarmables, attackDamageEntities = this.attackDamageEntities) {
+  // Méthode de gestion d'attaque en cône
+  attackCone(attackRange = this.attackRange, attackConeAngle = this.attackConeAngle, attackDamageFarmables = this.attackDamageFarmables, attackDamageEntities = this.attackDamageEntities) {
 
-  // Calculer le centre de la hitbox du joueur
-  const { centerX, centerY } = this.getBounds();
+    // Calculer le centre de la hitbox du joueur
+    const { centerX, centerY } = this.getBounds();
 
-  // Obtenir l'angle d'attaque en fonction de la dernière direction
-  const attackRotation = this.getAttackRotation();
+    // Obtenir l'angle d'attaque en fonction de la dernière direction
+    const attackRotation = this.getAttackRotation();
 
-  // Afficher le cône d'attaque
-  this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
+    // Afficher le cône d'attaque
+    this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
 
-  // Liste des cibles potentielles
-  const farmables = this.scene.farmableGroup.getChildren();
-  
-  // Vérifier les collisions dans le cône pour chaque type de cible
-  farmables.forEach(target => {
-    // Obtenir les coins de la bounding box de la cible
-    const targetBounds = target.getBounds();
-    const targetPoints = [
-      { x: targetBounds.left, y: targetBounds.top },    // coin supérieur gauche
-      { x: targetBounds.right, y: targetBounds.top },   // coin supérieur droit
-      { x: targetBounds.right, y: targetBounds.bottom }, // coin inférieur droit
-      { x: targetBounds.left, y: targetBounds.bottom }  // coin inférieur gauche
-    ];
+    // Liste des cibles potentielles
+    const farmables = this.scene.farmableGroup.getChildren();
+    
+    // Vérifier les collisions dans le cône pour chaque type de cible
+    farmables.forEach(target => {
+      // Obtenir les coins de la bounding box de la cible
+      const targetBounds = target.getBounds();
+      const targetPoints = [
+        { x: targetBounds.left, y: targetBounds.top },    // coin supérieur gauche
+        { x: targetBounds.right, y: targetBounds.top },   // coin supérieur droit
+        { x: targetBounds.right, y: targetBounds.bottom }, // coin inférieur droit
+        { x: targetBounds.left, y: targetBounds.bottom }  // coin inférieur gauche
+      ];
 
-    // Vérifier si au moins un point de la bounding box est dans le cône
-    const isTargetInCone = targetPoints.some(point => {
-      const dx = point.x - centerX;
-      const dy = point.y - centerY;
-      const distance = Phaser.Math.Distance.Between(centerX, centerY, point.x, point.y);
+      // Vérifier si au moins un point de la bounding box est dans le cône
+      const isTargetInCone = targetPoints.some(point => {
+        const dx = point.x - centerX;
+        const dy = point.y - centerY;
+        const distance = Phaser.Math.Distance.Between(centerX, centerY, point.x, point.y);
 
-      // Vérifier la distance par rapport au range
-      if (distance <= attackRange) {
-        const TargetAngle = Math.atan2(dy, dx);
-        const angleDifference = Phaser.Math.Angle.Wrap(TargetAngle - attackRotation);
+        // Vérifier la distance par rapport au range
+        if (distance <= attackRange) {
+          const TargetAngle = Math.atan2(dy, dx);
+          const angleDifference = Phaser.Math.Angle.Wrap(TargetAngle - attackRotation);
 
-        // Vérifier si le point est dans l'angle d'attaque
-        return Math.abs(angleDifference) <= attackConeAngle;
+          // Vérifier si le point est dans l'angle d'attaque
+          return Math.abs(angleDifference) <= attackConeAngle;
+        }
+        return false;
+      });
+
+      // Si la bounding box de la cible est dans le cône, appliquer l'attaque
+      if (isTargetInCone) {
+        this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
       }
-      return false;
     });
-
-    // Si la bounding box de la cible est dans le cône, appliquer l'attaque
-    if (isTargetInCone) {
-      this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
-    }
-  });
-}
+  }
 
   // Méthode pour afficher la hitbox du cône avec des paramètres passés
   showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle) {
@@ -241,14 +243,22 @@ attackCone(attackRange = this.attackRange, attackConeAngle = this.attackConeAngl
       });
   }
   
+  // Gestion des réductions de dommage
+  takeDamage(attackDamage) {
+    this.playerHP.removeHealth(attackDamage*(1-this.damageReduction));
+  }
+
   // Gestion des effets d’une attaque sur une cible
   hitTarget(target, attackDamageFarmables, attackDamageEntities) {
-    this.scene.hitFarmable(this, target);
-    /* else if (target.isEnemy) {
+    if(target.isEnnemy){
+      //logique pour infliger des dommages aux ennemies
+    }
+    else if(target.isPlayer){
       target.takeDamage(10); 
-    } else if (target.isPlayer) {
-      target.takeDamage(5);
-    }*/
+    }
+    else{
+      this.scene.hitFarmable(this, target);
+    }
   }
 
   update() {
