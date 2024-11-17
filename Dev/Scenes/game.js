@@ -160,7 +160,6 @@ export class GameScene extends Phaser.Scene {
     collectResource(type, quantity, id) {
         // Ajouter des ressources à la collecte globale
         if (this.resources[type]) {
-            this.resources[type].add(quantity);
             this.inventory.addItem("Ressource", type, quantity)
             this.inventory.updateInventoryText();
             console.log(`${id} ${type} collectée: ${quantity}, total: ${this.inventory.inventory[type].quantity}`);
