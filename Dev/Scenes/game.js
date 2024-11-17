@@ -14,17 +14,7 @@ export class GameScene extends Phaser.Scene {
 		this.playerHP;
 		this.farmableGroup;
 		this.resourcesGroup;
-		this.craftables = {
-			stick: new Craftable("Ressource", "stick", 2, {wood: 1}),
-			plank: new Craftable("Ressource", "plank", 4, {wood: 2}),
-			woodenAxe: new Craftable("Tool", "woodenAxe", 1, {plank: 3, stick: 2}),
-			woodenPickaxe: new Craftable("Tool", "woodenPickaxe", 1, {plank: 3, stick: 2}),
-			stoneAxe: new Craftable("Tool", "stoneAxe", 1, {stone: 3, stick: 2}),
-			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
-		};
-		this.craftSelected;
-		this.playerInventory = new Inventory();
-		this.inventoryText;
+		this.inventory = new Inventory(this);
 	}
 	
 	preload() {
@@ -70,126 +60,15 @@ export class GameScene extends Phaser.Scene {
 		this.input.keyboard.on("keydown-P", () => {
 			this.playerHP.removeHealth(10);
 		});
-		
-		const inventoryTitleText = this.add.text(0, 0, 'Inventaire', { fontSize: '24px', fill: '#fff' })
-		.setOrigin(0,0)
-		.setPosition(this.cameras.main.width * 0.02, this.cameras.main.height *0.15)
-		.setScrollFactor(0);
-		
-		this.inventoryText = this.add.text(0, 0, '', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0,0)
-		.setPosition(this.cameras.main.width * 0.02, this.cameras.main.height *0.20)
-		.setScrollFactor(0);
-		
-		Object.keys(this.playerInventory.inventory).forEach((element) => {
-			this.inventoryText.appendText("\n" + element + " " + this.playerInventory.inventory[element].quantity)
-		});
-		
-		const craftButton = this.add.text(200, 300, 'Craft', { fontSize: '32px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width / 2, this.cameras.main.height *0.8)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectStickButton = this.add.text(200, 300, 'Stick', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.25, this.cameras.main.height *0.85)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectPlankButton = this.add.text(200, 300, 'Plank', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.25, this.cameras.main.height *0.95)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectWoodenAxeButton = this.add.text(200, 300, 'woodenAxe', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.5, this.cameras.main.height *0.85)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectWoodenPickaxeButton = this.add.text(200, 300, 'woodenPickaxe', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.5, this.cameras.main.height *0.95)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectStoneAxeButton = this.add.text(200, 300, 'stoneAxe', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.75, this.cameras.main.height *0.85)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		const selectStonePickaxeButton = this.add.text(200, 300, 'stonePickaxe', { fontSize: '16px', fill: '#fff' })
-		.setOrigin(0.5,0.5)
-		.setPosition(this.cameras.main.width * 0.75, this.cameras.main.height *0.95)
-		.setInteractive()
-		.setScrollFactor(0);
-		
-		craftButton.on('pointerdown', () => {
-			this.craftingLogic()
-		});
-		
-		selectStickButton.on('pointerdown', () => {
-			this.craftSelected = "stick";
-			selectStickButton.setStyle({ fill: '#ff0' });
-			selectPlankButton.setStyle({ fill: '#fff' });
-			selectWoodenAxeButton.setStyle({ fill: '#fff' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#fff' });
-			selectStoneAxeButton.setStyle({ fill: '#fff' });
-			selectStonePickaxeButton.setStyle({ fill: '#fff' });
-		});
-		
-		selectPlankButton.on('pointerdown', () => {
-			this.craftSelected = "plank";
-			selectStickButton.setStyle({ fill: '#fff' });
-			selectPlankButton.setStyle({ fill: '#ff0' });
-			selectWoodenAxeButton.setStyle({ fill: '#fff' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#fff' });
-			selectStoneAxeButton.setStyle({ fill: '#fff' });
-			selectStonePickaxeButton.setStyle({ fill: '#fff' });
-		});
-		
-		selectWoodenAxeButton.on('pointerdown', () => {
-			this.craftSelected = "woodenAxe";
-			selectStickButton.setStyle({ fill: '#fff' });
-			selectPlankButton.setStyle({ fill: '#fff' });
-			selectWoodenAxeButton.setStyle({ fill: '#ff0' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#fff' });
-			selectStoneAxeButton.setStyle({ fill: '#fff' });
-			selectStonePickaxeButton.setStyle({ fill: '#fff' });
-		});
-		
-		selectWoodenPickaxeButton.on('pointerdown', () => {
-			this.craftSelected = "woodenPickaxe";
-			selectStickButton.setStyle({ fill: '#fff' });
-			selectPlankButton.setStyle({ fill: '#fff' });
-			selectWoodenAxeButton.setStyle({ fill: '#fff' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#ff0' });
-			selectStoneAxeButton.setStyle({ fill: '#fff' });
-			selectStonePickaxeButton.setStyle({ fill: '#fff' });
-		});
-		
-		selectStoneAxeButton.on('pointerdown', () => {
-			this.craftSelected = "stoneAxe";
-			selectStickButton.setStyle({ fill: '#fff' });
-			selectPlankButton.setStyle({ fill: '#fff' });
-			selectWoodenAxeButton.setStyle({ fill: '#fff' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#fff' });
-			selectStoneAxeButton.setStyle({ fill: '#ff0' });
-			selectStonePickaxeButton.setStyle({ fill: '#fff' });
-		});
-		
-		selectStonePickaxeButton.on('pointerdown', () => {
-			this.craftSelected = "stonePickaxe";
-			selectStickButton.setStyle({ fill: '#fff' });
-			selectPlankButton.setStyle({ fill: '#fff' });
-			selectWoodenAxeButton.setStyle({ fill: '#fff' });
-			selectWoodenPickaxeButton.setStyle({ fill: '#fff' });
-			selectStoneAxeButton.setStyle({ fill: '#fff' });
-			selectStonePickaxeButton.setStyle({ fill: '#ff0' });
-		});
+
+		this.inventory.createUI();
+
+		// Exemple : Ajouter des ressources pour tester
+		this.inventory.addItem("Ressource", "wood", 10);
+		this.inventory.addItem("Ressource", "stone", 5);
+
+		// Mettre à jour l'affichage de l'inventaire
+		this.inventory.updateInventoryText();
 	}
 	
 	
@@ -219,11 +98,6 @@ export class GameScene extends Phaser.Scene {
 		if (this.playerHP.currentHealth <= 0) {
 			this.scene.start("scene-menu");
 		}
-		
-		this.inventoryText.setText('');
-		Object.keys(this.playerInventory.inventory).forEach((element) => {
-			this.inventoryText.appendText("\n" + element + " " + this.playerInventory.inventory[element].quantity)
-		});
 	}
 	
 	handlePlayerMovement() {
@@ -354,15 +228,10 @@ export class GameScene extends Phaser.Scene {
 	}
 	
 	collectResource(type, quantity) {
-		this.playerInventory.addItem("Ressource", type, quantity)
+		this.inventory.addItem("Ressource", type, quantity)
+		this.inventory.updateInventoryText();
 		console.log(
-			`Ressource ${type} collectée: ${quantity}, total: ${this.playerInventory.inventory[type].quantity}`
+			`Ressource ${type} collectée: ${quantity}, total: ${this.inventory.inventory[type].quantity}`
 		);
-	}
-	
-	craftingLogic(){
-		if (this.craftables[this.craftSelected].isCraftable(this.playerInventory)){
-			this.craftables[this.craftSelected].craft(this.playerInventory, this.craftables[this.craftSelected].category)
-		}
 	}
 }
