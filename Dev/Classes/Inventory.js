@@ -17,6 +17,8 @@ export default class Inventory {
 			stoneAxe: new Craftable("Tool", "stoneAxe", 1, {stone: 3, stick: 2}),
 			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
 		};
+        this.itemSelected = null;
+        this.itemButtons = {};
     }
 
     addItem(category, type, quantity) {
@@ -45,6 +47,10 @@ export default class Inventory {
         return this.inventory[type] && this.inventory[type].quantity >= quantity;
     }
 
+    getTools() {
+        return Object.keys(this.inventory).filter((key) => this.inventory[key] instanceof Tool);
+    }
+
     createUI() {
         // Texte d'inventaire
         this.inventoryText = this.scene.add.text(
@@ -53,6 +59,24 @@ export default class Inventory {
             '',
             { fontSize: '16px', fill: '#fff' }
         ).setOrigin(0, 0).setScrollFactor(0);
+
+        // Ajout d'un affichage des outils
+        const tools = this.getTools();
+        tools.forEach((tool, index) => {
+            const button = this.scene.add.text(
+                this.scene.cameras.main.width * 0.1,
+                this.scene.cameras.main.height * 0.1 + index * 20,
+                tool,
+                { fontSize: '16px', fill: '#fff' }
+            )
+                .setInteractive()
+                .setScrollFactor(0)
+                .on('pointerdown', () => {
+                    this.selectEquippedItem(tool, button)
+                });
+
+            this.itemButtons[tool] = button
+        });
 
         // Boutons de craft
         const buttonData = [
@@ -105,6 +129,15 @@ export default class Inventory {
             const { quantity } = this.inventory[key];
             this.inventoryText.appendText(`\n${key}: ${quantity}`);
         });
+    }
+
+    selectEquippedItem(key, button) {
+        this.itemSelected = key;
+        Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
+        button.setStyle({ fill: '#ff0' });
+
+        this.scene.player.equipTool(key);
+        console.log(`Outil sélectionné : ${key}`);
     }
 
     selectCraftItem(key, button) {

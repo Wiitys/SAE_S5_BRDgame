@@ -19,7 +19,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.damageReduction = 0;
     this.playerSpeed = 200;
     this.lastDirection = "up";
-    this.isEquipped = false;
+    this.equippedTool = null;
+    this.toolSprite = null;
     this.cursor = scene.input.keyboard.createCursorKeys();
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
@@ -260,16 +261,32 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  equipTool(toolKey) {
+    this.equippedTool = toolKey;
+    
+    // Si un outil est déjà affiché, changez son sprite
+    if (this.toolSprite) {
+        this.toolSprite.setTexture(toolKey);
+        console.log("outil changé")
+    } else {
+        // Sinon, créez le sprite pour l'outil
+        this.toolSprite = this.scene.add.sprite(this.x + 16, this.y, toolKey);
+        console.log("outil créé")
+    }
+}
+
   update() {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.isEquipped){
+      if(!this.equippedTool){
         //
       }else{
         this.attackCone();
       }
     }
+
+    this.toolSprite.setPosition(this.x + 16, this.y);
 
     if (this.playerHP.currentHealth <= 0) {
       this.scene.scene.start("scene-menu");

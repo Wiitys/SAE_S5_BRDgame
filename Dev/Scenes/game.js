@@ -38,6 +38,10 @@ export class GameScene extends Phaser.Scene {
     this.load.image("wood", "/assets/wood.png");
     this.load.image("stone", "/assets/stone.png");
     this.load.image("meat", "/assets/meat.png");
+
+    //tools
+    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
   }
 	
 	create() {
@@ -61,14 +65,24 @@ export class GameScene extends Phaser.Scene {
     this.syncResources();
     
     this.inventory = new Inventory(this);
-		this.inventory.createUI();
 
-		// Exemple : Ajouter des ressources pour tester
-		this.inventory.addItem("Ressource", "wood", 10);
-		this.inventory.addItem("Ressource", "stone", 5);
-    
-		// Mettre à jour l'affichage de l'inventaire
-		this.inventory.updateInventoryText();
+	// Exemple : Ajouter des ressources pour tester
+	this.inventory.addItem("Ressource", "wood", 10);
+	this.inventory.addItem("Ressource", "stone", 5);
+
+    this.inventory.addItem("Tool", "stoneAxe", 1);
+    this.inventory.addItem("Tool", "woodenPickaxe", 1);
+
+    this.inventory.createUI();
+    this.inventory.updateInventoryText();
+
+    this.tools = {
+        stoneAxe: new Tool('stoneAxe', 1),
+        woodenPickaxe: new Tool('woodenPickaxe', 1),
+    };
+
+    // Exemple : Équipez un outil
+    this.player.equipTool('stoneAxe');
   }
   
   update() {
