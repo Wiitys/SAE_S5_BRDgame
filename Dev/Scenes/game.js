@@ -1,5 +1,8 @@
 import Ressource from "../Classes/Ressource.js";
 import Farmable from "../Classes/Farmable.js";
+import Craftable from "../Classes/Craftable.js";
+import Tool from "../Classes/Tool.js";
+import Inventory from "../Classes/Inventory.js";
 import Player from "../Classes/Player.js";
 
 import socket from '../Modules/socket.js';
@@ -21,17 +24,14 @@ export class GameScene extends Phaser.Scene {
     };
     this.resourcesGroup;
   }
-
-  preload() {
+	
+	preload() {
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
 
     //farmables
-    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
-      frameWidth: 32,  // largeur de chaque frame
-      frameHeight: 32  // hauteur de chaque frame
-    });
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image("rock", "/assets/rock.png");
 
     //ressources
@@ -39,8 +39,8 @@ export class GameScene extends Phaser.Scene {
     this.load.image("stone", "/assets/stone.png");
     this.load.image("meat", "/assets/meat.png");
   }
-
-  create() {
+	
+	create() {
 
     //créer les instances
     this.player = new Player(this, 0, 0);
@@ -59,14 +59,23 @@ export class GameScene extends Phaser.Scene {
 
     this.syncFarmables();
     this.syncResources();
-  }
+    
+    this.inventory = new Inventory(this);
+		this.inventory.createUI();
 
+		// Exemple : Ajouter des ressources pour tester
+		this.inventory.addItem("Ressource", "wood", 10);
+		this.inventory.addItem("Ressource", "stone", 5);
+    
+		// Mettre à jour l'affichage de l'inventaire
+		this.inventory.updateInventoryText();
+  }
+  
   update() {
     // Gestion des mouvements du joueur
     this.player.update();
     this.updateOtherPlayers();
    }
-
     
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
@@ -151,8 +160,9 @@ export class GameScene extends Phaser.Scene {
     collectResource(type, quantity, id) {
         // Ajouter des ressources à la collecte globale
         if (this.resources[type]) {
-            this.resources[type].add(quantity);
-            console.log(`${id} ${type} collectée: ${quantity}, total: ${this.resources[type].quantity}`);
+            this.inventory.addItem("Ressource", type, quantity)
+            this.inventory.updateInventoryText();
+            console.log(`${id} ${type} collectée: ${quantity}, total: ${this.inventory.inventory[type].quantity}`);
             socket.emit('collectResource', id);
         } else {
             console.log(`Ressource ${type} non définie.`);
@@ -282,4 +292,5 @@ export class GameScene extends Phaser.Scene {
             }
         });
     }
+
 }
