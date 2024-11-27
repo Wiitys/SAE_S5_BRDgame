@@ -217,16 +217,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Calculer l’angle d’attaque basé sur la dernière direction
   getAttackRotation() {
-    switch (this.lastDirection) {
-      case "up":
-        return -Math.PI / 2;
-      case "down":
-        return Math.PI / 2;
-      case "left":
-        return Math.PI;
-      case "right":
-        return 0;
-    }
+    const pointer = this.scene.input.activePointer; // Récupère la position de la souris
+    const dx = pointer.worldX - this.x; // Différence en X entre la souris et le joueur
+    const dy = pointer.worldY - this.y; // Différence en Y entre la souris et le joueur
+    return Math.atan2(dy, dx); // Angle entre le joueur et la souris
   }
   
   // Interaction avec les farmables
