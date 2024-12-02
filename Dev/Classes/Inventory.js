@@ -133,6 +133,25 @@ export default class Inventory {
             const { quantity } = this.inventory[key];
             this.inventoryText.appendText(`\n${key}: ${quantity}`);
         });
+
+        Object.values(this.itemButtons).forEach(button => button.destroy());
+        
+        const tools = this.getTools();
+        tools.forEach((tool, index) => {
+            const button = this.scene.add.text(
+                this.scene.cameras.main.width * 0.1,
+                this.scene.cameras.main.height * 0.1 + index * 20,
+                tool,
+                { fontSize: '16px', fill: '#fff' }
+            )
+                .setInteractive()
+                .setScrollFactor(0)
+                .on('pointerdown', () => {
+                    this.selectEquippedItem(tool, button)
+                });
+
+            this.itemButtons[tool] = button
+        });
     }
 
     selectEquippedItem(key, button) {
