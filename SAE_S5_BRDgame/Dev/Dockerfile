@@ -1,0 +1,22 @@
+# Utiliser l'image de Node.js comme base
+FROM node:18-alpine
+
+# Créer un répertoire de travail
+WORKDIR /app
+
+# COPY du package.json
+COPY package*.json .
+
+# Installation des dépendances
+RUN npm install
+
+# Copier les fichiers de l'application dans le conteneur
+COPY . .
+
+# Exposer le port
+EXPOSE 8000
+
+# Commande pour démarrer le serveur
+CMD ["npm", "run","dev","--","--host"]
+
+#Dockerfile Dev

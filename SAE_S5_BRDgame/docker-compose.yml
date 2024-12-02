@@ -1,0 +1,37 @@
+services:
+
+  phaser-app: # frontend
+    build: ./Dev/
+    ports:
+      - "8000:8000"
+    restart: always
+    networks: # Permet de communiquer uniquement au backend
+      - server
+
+  server: # backend
+    build: ./server/
+    ports:
+      - "3000:3000"
+    restart: always
+    networks: # Permet de communiquer avec le frontend et la bdd
+      - Dev
+  
+  #bdd:
+  #  image:
+  #  restart: always
+  #  environment:
+  #    - name=value
+  #  volumes:
+  #    - hostPath:containerPath:ro
+  #  networks:
+  #    - networkName
+
+#volumes:
+#  bdd:
+
+networks:
+  Dev:
+    driver: bridge
+  server:
+    driver: bridge
+  
