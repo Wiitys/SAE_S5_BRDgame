@@ -17,6 +17,10 @@ export default class Inventory {
 			stoneAxe: new Craftable("Tool", "stoneAxe", 1, {stone: 3, stick: 2}),
 			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
 		};
+        this.tools = {
+            stoneAxe: new Tool('stoneAxe', 1, 60, 60, 3, 2),
+            woodenPickaxe: new Tool('stonePickaxe', 1, 60, 35, 3, 2)
+        };
         this.itemSelected = null;
         this.itemButtons = {};
     }
@@ -27,7 +31,7 @@ export default class Inventory {
         } else if (category === "Ressource") {
             this.inventory[type] = new Ressource(type, quantity);
         } else if (category === "Tool") {
-            this.inventory[type] = new Tool(type, quantity);
+            this.inventory[type] = this.tools[type];
         }
     }
 
@@ -136,7 +140,7 @@ export default class Inventory {
         Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
         button.setStyle({ fill: '#ff0' });
 
-        this.scene.player.equipTool(key);
+        this.scene.player.equipTool(this.inventory[key]);
         console.log(`Outil sélectionné : ${key}`);
     }
 

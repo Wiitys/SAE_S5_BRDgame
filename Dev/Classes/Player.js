@@ -254,23 +254,25 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       //logique pour infliger des dommages aux ennemies
     }
     else if(target.isPlayer){
-      target.takeDamage(10); 
+      target.takeDamage(attackDamageEntities); 
     }
     else{
-      this.scene.hitFarmable(this, target);
+      this.scene.hitFarmable(this, target, attackDamageFarmables);
     }
   }
 
-  equipTool(toolKey) {
-    this.equippedTool = toolKey;
-    
+  equipTool(tool) {
+    this.equippedTool = tool;
+    console.log(tool.type)
     // Si un outil est déjà affiché, changez son sprite
     if (this.toolSprite) {
-        this.toolSprite.setTexture(toolKey);
+        this.toolSprite.setTexture(this.equippedTool.type);
+        this.toolSprite.setDisplaySize(12,24)
         console.log("outil changé")
     } else {
         // Sinon, créez le sprite pour l'outil
-        this.toolSprite = this.scene.add.sprite(this.x + 16, this.y, toolKey);
+        this.toolSprite = this.scene.add.sprite(this.x + 16, this.y, this.equippedTool.type);
+        this.toolSprite.setDisplaySize(12,24)
         console.log("outil créé")
     }
 }
@@ -279,8 +281,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(!this.equippedTool){
-        //
+      if(this.equippedTool){
+        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
       }else{
         this.attackCone();
       }

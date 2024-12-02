@@ -115,21 +115,21 @@ export class GameScene extends Phaser.Scene {
         farmableElement.farmableData = new Farmable(type, hp);
     }
     
-    hitFarmable(player, farmableElement) {
+    hitFarmable(player, farmableElement, damage) {
         const farmable = farmableElement.farmableData;
         const ressourceDrop = farmableElement.ressourceDrop;
-        
-        
+
         if (farmable) {
-            socket.emit('hitFarmable', farmableElement.id);
-
-            const resource = {
-                type: ressourceDrop,
-                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
-                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+            const resourcesToGenerate = Math.min(damage, farmable.currentHp);
+            for (var i = 0; i < resourcesToGenerate; i++) {
+                const resource = {
+                    type: ressourceDrop,
+                    x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                    y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+                };
+                socket.emit('hitFarmable', farmableElement.id);
+                socket.emit('createResource', resource);
             }
-
-            socket.emit('createResource', resource);
         }
     }
     

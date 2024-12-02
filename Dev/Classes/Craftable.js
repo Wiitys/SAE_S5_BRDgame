@@ -1,5 +1,3 @@
-import Inventory from "./Inventory.js";
-
 export default class Craftable{
     constructor(category, type, quantity = 0, recipe = {}) {
         this.category = category;   // Tool OU Ressource
