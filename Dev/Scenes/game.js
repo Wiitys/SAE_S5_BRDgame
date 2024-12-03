@@ -1,4 +1,5 @@
 import Ressource from "../Classes/Ressource.js";
+import Drop from "../Classes/Drop.js";
 import Farmable from "../Classes/Farmable.js";
 import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
@@ -10,19 +11,21 @@ import socket from '../Modules/socket.js';
 var otherPlayers;
 var otherPlayerSprites;
 var existingFarmables;
-var existingResources;
+var existingDrops;
 
 export class GameScene extends Phaser.Scene {
   constructor() {
     super("scene-game");
     this.cursor;
     this.farmableGroup;
-    this.resources = {
-      wood: new Ressource("wood"),
-      stone: new Ressource("stone"),
-      meat: new Ressource("meat"),
+    this.drops = {
+        wood: new Drop("Ressource", "wood"),
+        stone: new Drop("Ressource", "stone"),
+        meat: new Drop("Ressource", "meat"),
+        stoneAxe: new Drop('stoneAxe'),
+        woodenPickaxe: new Drop('woodenPickaxe'),
     };
-    this.resourcesGroup;
+    this.dropsGroup;
   }
 	
 	preload() {
@@ -54,15 +57,15 @@ export class GameScene extends Phaser.Scene {
     otherPlayers = [];
     otherPlayerSprites = [];
     existingFarmables = new Set();
-    existingResources = new Set();
+    existingDrops = new Set();
     
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
-    // Initialiser le groupe des ressources
-    this.resourceGroup = this.physics.add.group();
+    // Initialiser le groupe des drops
+    this.dropsGroup = this.physics.add.group();
 
     this.syncFarmables();
-    this.syncResources();
+    this.syncDrops();
     
     this.inventory = new Inventory(this);
 
@@ -100,15 +103,18 @@ export class GameScene extends Phaser.Scene {
         switch (type) {
             case "tree":
             farmableElement.setDisplaySize(32, 32);
-            farmableElement.ressourceDrop = "wood";
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "wood";
             break;
             case "rock":
             farmableElement.setDisplaySize(32, 32);
-            farmableElement.ressourceDrop = "stone";
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "stone";
             break;
             default:
             farmableElement.setDisplaySize(32, 32);
-            farmableElement.ressourceDrop = "wood";
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "wood";
         }
         
         // Associer un objet Farmable à l'instance
@@ -117,19 +123,21 @@ export class GameScene extends Phaser.Scene {
     
     hitFarmable(player, farmableElement, damage) {
         const farmable = farmableElement.farmableData;
-        const ressourceDrop = farmableElement.ressourceDrop;
+        const category = farmableElement.category;
+        const dropType = farmableElement.dropType;
 
         if (farmable) {
-            const resourcesToGenerate = Math.min(damage, farmable.currentHp);
-            for (var i = 0; i < resourcesToGenerate; i++) {
-                const resource = {
-                    type: ressourceDrop,
-                    x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
-                    y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
-                };
-                socket.emit('hitFarmable', farmableElement.id);
-                socket.emit('createResource', resource);
-            }
+            const dropQuantity = Math.min(damage, farmable.currentHp);
+            console.log(dropQuantity)
+            const drop = {
+                category: category,
+                type: dropType,
+                quantity: dropQuantity,
+                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+            };
+            socket.emit('hitFarmable', farmableElement.id);
+            socket.emit('createDrop', drop);
         }
     }
     
@@ -146,40 +154,40 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
-    createResource(type, x, y, id) {
+    createDrop(category, type, quantity, x, y, id) {
         
-        // Créer une instance de ressource dans le groupe à la position générée
-        const resourceElement = this.resourceGroup.create(
+        // Créer une instance de drop dans le groupe à la position générée
+        const dropElement = this.dropsGroup.create(
             x,
             y,
-            type
+            type,
         );
-        resourceElement.id = id;
-        resourceElement.setDisplaySize(30, 30);
-        resourceElement.resourceData = new Ressource(type, 1);
+        dropElement.id = id;
+        dropElement.setDisplaySize(30, 30);
+        dropElement.dropData = new Drop(category, type, quantity);
         // Ajouter une physique de collision pour permettre la collecte
         this.physics.add.overlap(
             this.player,
-            resourceElement,
+            dropElement,
             () => {
-                // Quand le joueur marche sur la ressource, elle est collectée
-                this.collectResource(type, 1, id);
-                resourceElement.destroy();
+                // Quand le joueur marche sur le drop, elle est collectée
+                this.collectDrop(dropElement.dropData, dropElement.id);
+                dropElement.destroy();
             },
             null,
             this
         );
     }
     
-    collectResource(type, quantity, id) {
-        // Ajouter des ressources à la collecte globale
-        if (this.resources[type]) {
-            this.inventory.addItem("Ressource", type, quantity)
+    collectDrop(drop, id) {
+        // Ajouter des drops à la collecte globale
+        if (this.drops[drop.type]) {
+            this.inventory.addItem(drop.category, drop.type, drop.quantity)
             this.inventory.updateInventoryText();
-            console.log(`${id} ${type} collectée: ${quantity}, total: ${this.inventory.inventory[type].quantity}`);
-            socket.emit('collectResource', id);
+            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
+            socket.emit('collectDrop', id);
         } else {
-            console.log(`Ressource ${type} non définie.`);
+            console.log(`drop ${drop.type} non définie.`);
         }
     }
     
@@ -269,40 +277,40 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
-    syncResources() {
-        socket.off('resourceList');
-        socket.off('resourceCreated');
-        socket.off('resourceCollected');
+    syncDrops() {
+        socket.off('dropList');
+        socket.off('dropCreated');
+        socket.off('dropCollected');
 
-        socket.emit('requestResources');
+        socket.emit('requestDrops');
 
-        // Recevoir les resources existants lors de la connexion
-        socket.on('resourceList', (resources) => {
-            console.log('Liste des resources reçue');
-            resources.forEach(resource => {
-                console.log('resource venant de liste reçu ' + resource.id)
-                if (!existingResources.has(resource.id)) { // Vérifier si la resource existe déjà
-                    this.createResource(resource.type, resource.x, resource.y, resource.id);
-                    existingResources.add(resource.id); // Ajouter l'ID à l'ensemble
+        // Recevoir les drops existants lors de la connexion
+        socket.on('dropList', (drops) => {
+            console.log('Liste des drops reçue');
+            drops.forEach(drop => {
+                console.log('resource venant de liste reçu ' + drop.id)
+                if (!existingDrops.has(drop.id)) { // Vérifier si la resource existe déjà
+                    this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                    existingDrops.add(drop.id); // Ajouter l'ID à l'ensemble
                 }
             });
         });
 
-        socket.on('resourceCreated', (resource) => {
-            console.log('Resource créé reçue ' + resource.id);
-            if (!existingResources.has(resource.id)) {
-                this.createResource(resource.type, resource.x, resource.y, resource.id);
-                existingResources.add(resource.id);
+        socket.on('dropCreated', (drop) => {
+            console.log('Drop créé reçu ' + drop.id);
+            if (!existingDrops.has(drop.id)) {
+                this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                existingDrops.add(drop.id);
             }
         });
         
-        socket.on('resourceCollected', (resourceId) => {
-            // Logique pour détruire la ressource sur le client
-            const resourceElement = this.resourceGroup.getChildren().find(resource => resource.id === resourceId);
-            if (resourceElement) {
-                resourceElement.destroy(); // Détruire l'élément visuel
-                console.log(`Resource avec ID ${resourceId} collecté sur le client`);
-                existingResources.delete(resourceId)
+        socket.on('dropCollected', (dropId) => {
+            // Logique pour détruire la drop sur le client
+            const dropElement = this.dropsGroup.getChildren().find(drop => drop.id === dropId);
+            if (dropElement) {
+                dropElement.destroy(); // Détruire l'élément visuel
+                console.log(`Resource avec ID ${dropId} collecté sur le client`);
+                existingDrops.delete(dropId)
             }
         });
     }

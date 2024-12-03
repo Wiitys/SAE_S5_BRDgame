@@ -1,6 +1,7 @@
 import Ressource from "./Ressource";
 import Tool from "./Tool";
 import Craftable from "./Craftable";
+import socket from '../Modules/socket.js';
 
 export default class Inventory {
     constructor(scene) {
@@ -19,7 +20,7 @@ export default class Inventory {
 		};
         this.tools = {
             stoneAxe: new Tool('stoneAxe', 1, 60, 60, 3, 2),
-            woodenPickaxe: new Tool('stonePickaxe', 1, 60, 35, 3, 2)
+            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 35, 3, 2)
         };
         this.itemSelected = null;
         this.itemButtons = {};
@@ -180,5 +181,19 @@ export default class Inventory {
         } else {
             console.log("Aucun objet sélectionné pour le craft !");
         }
+    }
+
+    dropInventory(x, y, displayWidth, displayHeight) {
+        Object.keys(this.inventory).forEach(element => {
+            const drop = {
+                category: this.inventory[element].constructor.name,
+                type: this.inventory[element].type,
+                quantity: this.inventory[element].quantity,
+                x: x + displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                y: y + displayHeight / 2 + Phaser.Math.Between(-32, 32),
+            };
+
+            socket.emit('createDrop', drop);
+        });
     }
 }

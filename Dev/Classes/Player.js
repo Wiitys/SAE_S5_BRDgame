@@ -1,5 +1,4 @@
-import HealthBar from "../Classes/HealthBar.js";
-import Farmable from "../Classes/Farmable.js";
+import HealthBar from "./HealthBar.js";
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
 
@@ -291,6 +290,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.toolSprite.setPosition(this.x + 16, this.y);
 
     if (this.playerHP.currentHealth <= 0) {
+      this.scene.inventory.dropInventory(this.x, this.y, this.displayWidth, this.displayHeight)
       this.scene.scene.start("scene-menu");
     }
   }

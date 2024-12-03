@@ -1,5 +1,5 @@
 export default class Tool{
-    constructor(type, quantity = 0, range, angle, farmableDamage, attackDamage) {
+    constructor(type, quantity = 0, range = 60, angle = 45, farmableDamage = 1, attackDamage = 1) {
       this.type = type;      // Type de tool : pickaxe, axe, sword, etc.
       this.quantity = quantity;  // Quantité de tools
       this.range = range;
