@@ -280,14 +280,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool){
+      if(this.equippedTool) {
         this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
-      }else{
+      } else {
         this.attackCone();
       }
     }
 
-    this.toolSprite.setPosition(this.x + 16, this.y);
+    if(this.equippedTool) {
+      this.toolSprite.setPosition(this.x + 16, this.y);
+    }
 
     if (this.playerHP.currentHealth <= 0) {
       this.scene.inventory.dropInventory(this.x, this.y, this.displayWidth, this.displayHeight)

@@ -18,13 +18,6 @@ export class GameScene extends Phaser.Scene {
     super("scene-game");
     this.cursor;
     this.farmableGroup;
-    this.drops = {
-        wood: new Drop("Ressource", "wood"),
-        stone: new Drop("Ressource", "stone"),
-        meat: new Drop("Ressource", "meat"),
-        stoneAxe: new Drop('stoneAxe'),
-        woodenPickaxe: new Drop('woodenPickaxe'),
-    };
     this.dropsGroup;
   }
 	
@@ -78,14 +71,6 @@ export class GameScene extends Phaser.Scene {
 
     this.inventory.createUI();
     this.inventory.updateInventoryText();
-
-    this.tools = {
-        stoneAxe: new Tool('stoneAxe', 1),
-        woodenPickaxe: new Tool('woodenPickaxe', 1),
-    };
-
-    // Exemple : Équipez un outil
-    this.player.equipTool('stoneAxe');
   }
   
   update() {
@@ -155,7 +140,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     createDrop(category, type, quantity, x, y, id) {
-        
+
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
             x,
@@ -181,7 +166,7 @@ export class GameScene extends Phaser.Scene {
     
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
-        if (this.drops[drop.type]) {
+        if (drop.type) {
             this.inventory.addItem(drop.category, drop.type, drop.quantity)
             this.inventory.updateInventoryText();
             console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
