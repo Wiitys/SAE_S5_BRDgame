@@ -19,8 +19,10 @@ export default class Inventory {
 			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
 		};
         this.tools = {
-            stoneAxe: new Tool('stoneAxe', 1, 60, 60, 3, 2),
-            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 35, 3, 2)
+            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 35, 3, 2),
+            stonePickaxe: new Tool('stonePickaxe', 1, 60, 60, 4, 3),
+            woodenAxe: new Tool('woodenAxe', 1, 60, 60, 2, 2),
+            stoneAxe: new Tool('stoneAxe', 1, 60, 35, 4, 3),
         };
         this.itemSelected = null;
         this.itemButtons = {};
