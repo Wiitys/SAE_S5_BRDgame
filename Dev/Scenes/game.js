@@ -78,14 +78,6 @@ export class GameScene extends Phaser.Scene {
 
     this.inventory.createUI();
     this.inventory.updateInventoryText();
-
-    this.tools = {
-        stoneAxe: new Tool('stoneAxe', 1),
-        woodenPickaxe: new Tool('woodenPickaxe', 1),
-    };
-
-    // Exemple : Équipez un outil
-    this.player.equipTool('stoneAxe');
   }
   
   update() {

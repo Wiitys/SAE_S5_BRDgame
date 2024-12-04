@@ -274,7 +274,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.toolSprite.setDisplaySize(12,24)
         console.log("outil créé")
     }
-}
+  }
+
+  unequipTool() {
+    this.equippedTool = null;
+    
+    if(this.toolSprite){
+      this.toolSprite.destroy();
+      this.toolSprite = null;
+    }
+  }
 
   update() {
     this.handleMovement();
@@ -287,8 +296,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
-    this.toolSprite.setPosition(this.x + 16, this.y);
-
+    if(this.equippedTool){
+      this.toolSprite.setPosition(this.x + 16, this.y);
+    }
+    
     if (this.playerHP.currentHealth <= 0) {
       this.scene.inventory.dropInventory(this.x, this.y, this.displayWidth, this.displayHeight)
       this.scene.scene.start("scene-menu");

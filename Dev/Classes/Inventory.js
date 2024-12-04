@@ -19,13 +19,14 @@ export default class Inventory {
 			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
 		};
         this.tools = {
-            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 35, 3, 2),
-            stonePickaxe: new Tool('stonePickaxe', 1, 60, 60, 4, 3),
-            woodenAxe: new Tool('woodenAxe', 1, 60, 60, 2, 2),
-            stoneAxe: new Tool('stoneAxe', 1, 60, 35, 4, 3),
+            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 20, 3, 2),
+            stonePickaxe: new Tool('stonePickaxe', 1, 45, 90, 4, 3),
+            woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
+            stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
         };
         this.itemSelected = null;
         this.itemButtons = {};
+        this.unequipButton = null;
     }
 
     addItem(category, type, quantity) {
@@ -72,7 +73,7 @@ export default class Inventory {
         tools.forEach((tool, index) => {
             const button = this.scene.add.text(
                 this.scene.cameras.main.width * 0.1,
-                this.scene.cameras.main.height * 0.1 + index * 20,
+                this.scene.cameras.main.height * 0.1 + (index+1) * 20,
                 tool,
                 { fontSize: '16px', fill: '#fff' }
             )
@@ -84,6 +85,19 @@ export default class Inventory {
 
             this.itemButtons[tool] = button
         });
+
+        const button = this.scene.add.text(
+            this.scene.cameras.main.width * 0.1,
+            this.scene.cameras.main.height * 0.1 + 0 * 20,
+            'unequip',
+            { fontSize: '16px', fill: '#fff' }
+        )
+            .setInteractive()
+            .setScrollFactor(0)
+            .on('pointerdown', () => {
+                this.unequipItem(button)
+            });
+        this.unequipButton = button
 
         // Boutons de craft
         const buttonData = [
@@ -143,7 +157,7 @@ export default class Inventory {
         tools.forEach((tool, index) => {
             const button = this.scene.add.text(
                 this.scene.cameras.main.width * 0.1,
-                this.scene.cameras.main.height * 0.1 + index * 20,
+                this.scene.cameras.main.height * 0.1 + (index+1) * 20,
                 tool,
                 { fontSize: '16px', fill: '#fff' }
             )
@@ -160,10 +174,20 @@ export default class Inventory {
     selectEquippedItem(key, button) {
         this.itemSelected = key;
         Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
+        this.unequipButton.setStyle({fill: '#fff'});
         button.setStyle({ fill: '#ff0' });
 
         this.scene.player.equipTool(this.inventory[key]);
         console.log(`Outil sélectionné : ${key}`);
+    }
+
+    unequipItem(button) {
+        this.itemSelected = null;
+        Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
+        button.setStyle({ fill: '#ff0' });
+
+        this.scene.player.unequipTool();
+        console.log(`Outils désélectionnés`);
     }
 
     selectCraftItem(key, button) {
