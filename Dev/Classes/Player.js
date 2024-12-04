@@ -289,9 +289,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool){
+      if(this.equippedTool) {
         this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
-      }else{
+      } else {
         this.attackCone();
       }
     }
