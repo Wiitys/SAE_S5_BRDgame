@@ -4,10 +4,11 @@ import Craftable from "./Craftable";
 import socket from '../Modules/socket.js';
 
 export default class Inventory {
-    constructor(scene) {
+    constructor(scene, maxSlots = 5) {
         this.scene = scene; // Référence à la scène Phaser
         this.inventory = {};
         this.inventoryText = null;
+        this.maxSlots = maxSlots;
         this.craftButtons = {};
         this.craftSelected = null;
         this.craftables = {
@@ -28,13 +29,27 @@ export default class Inventory {
         this.itemButtons = {};
     }
 
+    getUsedSlots() {
+        return Object.keys(this.inventory).length;
+    }
+
+    isFull() {
+        return this.getUsedSlots() >= this.maxSlots;
+    }
+
     addItem(category, type, quantity) {
         if (this.inventory[type]) {
+            // Augmenter la quantité si l'objet existe déjà
             this.inventory[type].quantity += quantity;
-        } else if (category === "Ressource") {
-            this.inventory[type] = new Ressource(type, quantity);
-        } else if (category === "Tool") {
-            this.inventory[type] = this.tools[type];
+        } else if (!this.isFull()) {
+            // Vérifier si l'inventaire a de la place pour un nouvel objet
+            if (category === "Ressource") {
+                this.inventory[type] = new Ressource(type, quantity);
+            } else if (category === "Tool") {
+                this.inventory[type] = this.tools[type];
+            }
+        } else {
+            console.log("Inventaire plein, impossible d'ajouter l'objet !");
         }
     }
 
@@ -175,14 +190,38 @@ export default class Inventory {
     craftSelectedItem() {
         if (this.craftSelected) {
             const selectedCraftable = this.craftables[this.craftSelected];
-            if (selectedCraftable.isCraftable(this)) {
+    
+            // Vérifie si l'inventaire peut contenir l'objet ou si l'objet existe déjà
+            if (!this.isFull() || this.inventory[this.craftSelected]) {
+                if (selectedCraftable.isCraftable(this)) {
+                    selectedCraftable.craft(this, selectedCraftable.category);
+                    console.log(`${this.craftSelected} a été crafté avec succès.`);
+                } else {
+                    console.log("L'objet sélectionné n'est pas craftable.");
+                }
+            } 
+            // Vérifie si le craft peut libérer un slot
+            else if (this.craftFreeSlot(selectedCraftable)) {
                 selectedCraftable.craft(this, selectedCraftable.category);
-            } else {
-                console.log("L'objet sélectionné n'est pas craftable");
+                console.log(`${this.craftSelected} a été crafté après avoir libéré de la place.`);
+            } 
+            else {
+                console.log("Inventaire plein, impossible de craft.");
             }
         } else {
             console.log("Aucun objet sélectionné pour le craft !");
         }
+    }
+
+    craftFreeSlot(craftable) { //
+        const requiredItems = craftable.recipe;
+    
+        for (const [item, quantity] of Object.entries(requiredItems)) {
+            if (this.inventory[item] && this.inventory[item].quantity <= quantity) {
+                return true;
+            }
+        }
+        return false;
     }
 
     dropInventory(x, y, displayWidth, displayHeight) {

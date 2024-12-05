@@ -156,8 +156,13 @@ export class GameScene extends Phaser.Scene {
             dropElement,
             () => {
                 // Quand le joueur marche sur le drop, elle est collectée
-                this.collectDrop(dropElement.dropData, dropElement.id);
-                dropElement.destroy();
+                // Tente de collecter le drop
+                if (this.collectDrop(dropElement.dropData, dropElement.id)) {
+                    dropElement.destroy();
+                } else {
+                    dropElement.setTint(0xff0000); // Rougir temporairement pour indiquer l'échec
+                    this.time.delayedCall(200, () => dropElement.clearTint());
+                }
             },
             null,
             this
@@ -167,12 +172,19 @@ export class GameScene extends Phaser.Scene {
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
         if (drop.type) {
-            this.inventory.addItem(drop.category, drop.type, drop.quantity)
-            this.inventory.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
-            socket.emit('collectDrop', id);
+            if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
+                this.inventory.addItem(drop.category, drop.type, drop.quantity);
+                this.inventory.updateInventoryText();
+                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type]?.quantity}`);
+                socket.emit('collectDrop', id);
+                return true;
+            } else {
+                console.log(`Impossible de collecter ${drop.type}, inventaire plein.`);
+                return false;
+            }
         } else {
-            console.log(`drop ${drop.type} non définie.`);
+            console.log(`Drop ${drop.type} non défini.`);
+            return false;
         }
     }
     
