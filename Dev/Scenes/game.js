@@ -1,323 +1,313 @@
 import Ressource from "../Classes/Ressource.js";
+import Drop from "../Classes/Drop.js";
 import Farmable from "../Classes/Farmable.js";
-import HealthBar from "../Classes/HealthBar.js";
+import Craftable from "../Classes/Craftable.js";
+import Tool from "../Classes/Tool.js";
+import Inventory from "../Classes/Inventory.js";
+import Player from "../Classes/Player.js";
 import Ennemi from "../Classes/Ennemi.js";
 
-var playerList = [];
+import socket from '../Modules/socket.js';
+
+var otherPlayers;
+var otherPlayerSprites;
+var existingFarmables;
+var existingDrops;
 
 export class GameScene extends Phaser.Scene {
   constructor() {
     super("scene-game");
-    this.player;
     this.cursor;
-    this.playerSpeed = 200;
     this.farmableGroup;
-    this.resources = {
-      wood: new Ressource("wood"),
-      stone: new Ressource("stone"),
-      meat: new Ressource("meat"),
-    };
-    this.resourcesGroup;
-    this.playerHP;
-    this.ennemiMelee;
+    this.dropsGroup;
   }
-
-  preload() {
+	
+	preload() {
     //load les sprites, sons, animations
-
-    //Player
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
     //Ennemis
     this.load.image("ennemi", "/assets/ennemi.png");
-	  this.load.image("projectileTexture", "/assets/projectileTexture.png");
+	this.load.image("projectileTexture", "/assets/projectileTexture.png");
     this.load.image("meleeTexture", "/assets/meleeTexture.png");
 
     //farmables
-    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', {
-      frameWidth: 32,  // largeur de chaque frame
-      frameHeight: 32  // hauteur de chaque frame
-    });
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image("rock", "/assets/rock.png");
 
     //ressources
     this.load.image("wood", "/assets/wood.png");
     this.load.image("stone", "/assets/stone.png");
     this.load.image("meat", "/assets/meat.png");
+
+    //tools
+    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
   }
-
-  create() {
-	playerList.push(this.player)
-    // Animation pour la direction "side"
-    this.anims.create({
-      key: 'side', 
-      frames: this.anims.generateFrameNumbers('player', { start: 3, end: 5 }),
-      frameRate: 10,
-      repeat: -1
-    });
-
-    // Animation pour aller vers le haut
-    this.anims.create({
-      key: 'up', 
-      frames: this.anims.generateFrameNumbers('player', { start: 6, end: 8 }),
-      frameRate: 10,
-      repeat: -1
-    });
-
-    // Animation pour aller vers le bas
-    this.anims.create({
-      key: 'down', 
-      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 2 }), 
-      frameRate: 10,
-      repeat: -1
-    });
-    
-    this.lastDirectionPlayer = 'up';
-
+	
+	create() {
 
     //créer les instances
-    this.player = this.physics.add.sprite(0, 0, "player");
-    //this.player.setImmovable(true);
-    this.player.body.allowGravity = false;
+    this.player = new Player(this, 0, 0);
     this.cursor = this.input.keyboard.createCursorKeys();
-
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
+    otherPlayers = [];
+    otherPlayerSprites = [];
+    existingFarmables = new Set();
+    existingDrops = new Set();
+    
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
-    // Initialiser le groupe des ressources
-    this.resourceGroup = this.physics.add.group();
+    // Initialiser le groupe des drops
+    this.dropsGroup = this.physics.add.group();
 
-    // Ajouter des farmables
-    this.createFarmable("tree", 200, 200);
-    this.createFarmable("tree", 300, 300);
-    this.createFarmable("rock", 100, 150);
+    this.syncFarmables();
+    this.syncDrops();
+    
+    this.inventory = new Inventory(this);
 
-    this.player.setDisplaySize(32, 32);
+	// Exemple : Ajouter des ressources pour tester
+	this.inventory.addItem("Ressource", "wood", 10);
+	this.inventory.addItem("Ressource", "stone", 5);
 
-    this.playerHP = new HealthBar(this);
+    this.inventory.addItem("Tool", "stoneAxe", 1);
+    this.inventory.addItem("Tool", "woodenPickaxe", 1);
 
-    this.input.keyboard.on("keydown-P", () => {
-      this.playerHP.removeHealth(10);
-    });
+    this.inventory.createUI();
+    this.inventory.updateInventoryText();
 
     this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
     this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
   }
-
+  
   update() {
     // Gestion des mouvements du joueur
-    this.handlePlayerMovement();
-
-    // Attaquer les farmables en appuyant sur "E"
-    if (
-      Phaser.Input.Keyboard.JustDown(
-        this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E)
-      )
-    ) {
-      // Vérifier la collision manuellement
-      this.farmableGroup.children.each((farmableElement) => {
-        if (
-          Phaser.Geom.Intersects.RectangleToRectangle(
-            this.player.getBounds(),
-            farmableElement.getBounds()
-          )
-        ) {
-          this.hitFarmable(this.player, farmableElement);
-        }
-      });
-    }
-    if (this.playerHP.currentHealth <= 0) {
-      this.scene.start("scene-menu");
-    }
-
+    this.player.update();
+    this.updateOtherPlayers();
     this.ennemiRanged.getClosestTarget(this.player)
     this.ennemiMelee.getClosestTarget(this.player)
-  }
-
-  handlePlayerMovement() {
-    //changements (mouvements, play anims, ...)
-    const { up, down, left, right } = this.cursor;
-
-    let velocityX = 0;
-    let velocityY = 0;
-
-    if (left.isDown && !right.isDown) {
-      velocityX = -this.playerSpeed;
-      this.lastDirectionPlayer = 'left';
-    } else if (right.isDown && !left.isDown) {
-      velocityX = this.playerSpeed;
-      this.lastDirectionPlayer = 'right';
-    }
-
-    // Déplacement vertical
-    if (up.isDown && !down.isDown) {
-      velocityY = -this.playerSpeed;
-      this.lastDirectionPlayer = 'up';
-
-    } else if (down.isDown && !up.isDown) {
-      velocityY = this.playerSpeed;
-      this.lastDirectionPlayer = 'down';  
-    }
-
-    if (this.lastDirectionPlayer === 'up') {
-      this.player.flipX = false;
-      this.player.play('up', true);
-    } else if (this.lastDirectionPlayer === 'down') {
-      this.player.flipX = false;
-        this.player.play('down', true); 
-    } else if (this.lastDirectionPlayer === 'left') {
-        this.player.flipX = true; 
-        this.player.play('side', true); 
-    } else if (this.lastDirectionPlayer === 'right') {
-        this.player.flipX = false;
-        this.player.play('side', true); 
-    }
-
-    // Si le joueur se déplace en diagonale, on normalise la vitesse
-    if (velocityX !== 0 && velocityY !== 0) {
-      // Pour garder la même vitesse en diagonale
-      const diagonalSpeed = this.playerSpeed / Math.sqrt(2); // Normalisation
-      velocityX = velocityX > 0 ? diagonalSpeed : -diagonalSpeed;
-      velocityY = velocityY > 0 ? diagonalSpeed : -diagonalSpeed;
-    }
-
-        // Si aucune touche n'est pressée, arrêter l'animation
-        if (velocityX === 0 && velocityY === 0) {
-          this.player.anims.stop();  
-          switch(this.lastDirectionPlayer){
-            case 'left':
-              this.player.setFrame(3);
-              break;
-            case 'right':
-              this.player.setFrame(3);
-              break;
-            case 'down':
-              this.player.setFrame(0);
-              break;
+   }
+    
+    createFarmable(type, x, y, id, hp) {
+        // Créer une instance farmable
+        const farmableElement = this.farmableGroup.create(x, y, type, 0);
+        farmableElement.setOrigin(0, 0);
+        farmableElement.id = id;
+        
+        switch (type) {
+            case "tree":
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "wood";
+            break;
+            case "rock":
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "stone";
+            break;
             default:
-              this.player.setFrame(6);
-          }
-      }
-
-    // Applique les vitesses au joueur
-    this.player.setVelocity(velocityX, velocityY);
-  }
-
-  // Méthode pour collecter une ressource
-  collectResource(resourceType, quantity) {
-    if (this.resources[resourceType]) {
-      this.resources[resourceType].add(quantity);
-      console.log(
-        `${quantity} ${resourceType} ajouté. Total : ${this.resources[resourceType].quantity}`
-      );
+            farmableElement.setDisplaySize(32, 32);
+            farmableElement.category = "Ressource";
+            farmableElement.dropType = "wood";
+        }
+        
+        // Associer un objet Farmable à l'instance
+        farmableElement.farmableData = new Farmable(type, hp);
     }
-  }
+    
+    hitFarmable(player, farmableElement, damage) {
+        const farmable = farmableElement.farmableData;
+        const category = farmableElement.category;
+        const dropType = farmableElement.dropType;
 
-  createFarmable(type, x, y) {
-    // Créer une instance farmable
-    const farmableElement = this.farmableGroup.create(x, y, type, 0);
-    farmableElement.setOrigin(0, 0);
+        if (farmable) {
+            const dropQuantity = Math.min(damage, farmable.currentHp);
+            console.log(dropQuantity)
+            const drop = {
+                category: category,
+                type: dropType,
+                quantity: dropQuantity,
+                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+            };
+            socket.emit('hitFarmable', farmableElement.id);
+            socket.emit('createDrop', drop);
+        }
+    }
+    
+    farmableHalfHp(farmableElement, type){
+        switch (type) {
+            case "tree":
+            farmableElement.setFrame(1);
+            break;
+            case "rock":
+            //farmableElement.setFrame(1);  pas encore fait
+            break;
+            default:
+            farmableElement.setFrame(1);
+        }
+    }
+    
+    createDrop(category, type, quantity, x, y, id) {
 
-    switch (type) {
-      case "tree":
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "wood";
-        break;
-      case "rock":
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "stone";
-        break;
-      default:
-        farmableElement.setDisplaySize(32, 32);
-        farmableElement.ressourceDrop = "wood";
+        // Créer une instance de drop dans le groupe à la position générée
+        const dropElement = this.dropsGroup.create(
+            x,
+            y,
+            type,
+        );
+        dropElement.id = id;
+        dropElement.setDisplaySize(30, 30);
+        dropElement.dropData = new Drop(category, type, quantity);
+        // Ajouter une physique de collision pour permettre la collecte
+        this.physics.add.overlap(
+            this.player,
+            dropElement,
+            () => {
+                // Quand le joueur marche sur le drop, elle est collectée
+                this.collectDrop(dropElement.dropData, dropElement.id);
+                dropElement.destroy();
+            },
+            null,
+            this
+        );
+    }
+    
+    collectDrop(drop, id) {
+        // Ajouter des drops à la collecte globale
+        if (drop.type) {
+            this.inventory.addItem(drop.category, drop.type, drop.quantity)
+            this.inventory.updateInventoryText();
+            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
+            socket.emit('collectDrop', id);
+        } else {
+            console.log(`drop ${drop.type} non définie.`);
+        }
+    }
+    
+    updateOtherPlayers(){
+        socket.off('updatePlayers');
+
+        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
+
+        socket.on('updatePlayers', (data) => {
+            if(otherPlayerSprites[0] != undefined){
+                for (const sprite of otherPlayerSprites) {
+                    sprite.destroy(true)
+                    otherPlayerSprites = [];
+                }
+            }
+            otherPlayers = data;
+        })
+        
+        if (otherPlayers != null) {
+            for (let i = 0; i < otherPlayers.length; i++) {
+                if(otherPlayers[i].id != socket.id) {
+                    if (otherPlayers[i].inGame) {
+                        var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+                        newPlayer.setImmovable(true);
+                        newPlayer.body.allowGravity = false;
+                        otherPlayerSprites.push(newPlayer);
+                    }
+                }
+            }
+        }
+    }
+    
+    syncFarmables() {
+        socket.off('farmableList');
+        socket.off('farmableCreated');
+        socket.off('farmableHit');
+        socket.off('farmableDestroyed');
+
+        socket.emit('requestFarmables');
+
+        // Recevoir les farmables existants lors de la connexion
+        socket.on('farmableList', (farmables) => {
+            console.log('Liste des farmables reçue');
+            farmables.forEach(farmable => {
+                console.log('Farmable venant de liste reçu ' + farmable.id)
+                if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
+                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                    existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
+                    console.log('farmable trouvé')
+                }
+            });
+        });
+        
+        socket.on('farmableCreated', (farmable) => {
+            console.log('Farmable créé reçu ' + farmable.id);
+            if (!existingFarmables.has(farmable.id)) {
+                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                existingFarmables.add(farmable.id);
+            }
+        });
+        
+        socket.on('farmableHit', (farmableId) => {
+            // Logique pour détruire le farmable sur le client
+            const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+            if (farmableElement) {
+                const farmable = farmableElement.farmableData;
+                farmable.hit(); // réduire les hp
+                console.log(`Farmable avec ID ${farmableId} hit sur le client hp=${farmable.currentHp} `);
+                
+                if (!farmable.hasSwapped && farmable.isHalfHp()) {
+                    console.log(`${farmable.type} half hp !`);
+                    this.farmableHalfHp(farmableElement, farmable.type);
+                }
+            }
+            console.log(existingFarmables)
+        });
+        
+        socket.on('farmableDestroyed', (farmableId) => {
+            // Logique pour détruire le farmable sur le client
+            const farmableElement = this.farmableGroup.getChildren().find(farmable => farmable.id === farmableId);
+            if (farmableElement) {
+                farmableElement.destroy(); // Détruire l'élément visuel
+                console.log(`Farmable avec ID ${farmableId} détruit sur le client`);
+                existingFarmables.delete(farmableId)
+            }
+            console.log(existingFarmables)
+        });
     }
 
-    // Associer un objet Farmable à l'instance
-    farmableElement.farmableData = new Farmable(type, 10);
-  }
+    syncDrops() {
+        socket.off('dropList');
+        socket.off('dropCreated');
+        socket.off('dropCollected');
 
-  hitFarmable(player, farmableElement) {
-    const farmable = farmableElement.farmableData;
-    const ressourceDrop = farmableElement.ressourceDrop;
+        socket.emit('requestDrops');
 
-    if (farmable) {
-      farmable.hit(); // Infliger des dégâts
+        // Recevoir les drops existants lors de la connexion
+        socket.on('dropList', (drops) => {
+            console.log('Liste des drops reçue');
+            drops.forEach(drop => {
+                console.log('resource venant de liste reçu ' + drop.id)
+                if (!existingDrops.has(drop.id)) { // Vérifier si la resource existe déjà
+                    this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                    existingDrops.add(drop.id); // Ajouter l'ID à l'ensemble
+                }
+            });
+        });
 
-      console.log(`HP restant pour ${farmable.type}: ${farmable.currentHp}`);
-
-      if (!farmable.hasSwapped && farmable.isHalfHp()) {
-        console.log(`${farmable.type} half hp !`);
-        this.farmableHalfHp(farmableElement, farmable.type);
-      }
-
-      if (farmable.isDestroyed()) {
-        console.log(`${farmable.type} détruit !`);
-        farmableElement.destroy(); // Supprimer le farmable du jeu
-      }
-
-      this.createResource(
-        ressourceDrop,
-        farmableElement.x + farmableElement.displayWidth / 2,
-        farmableElement.y + farmableElement.displayHeight / 2,
-        farmableElement.displayWidth,
-        farmableElement.displayHeight
-      );
-      console.log();
+        socket.on('dropCreated', (drop) => {
+            console.log('Drop créé reçu ' + drop.id);
+            if (!existingDrops.has(drop.id)) {
+                this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                existingDrops.add(drop.id);
+            }
+        });
+        
+        socket.on('dropCollected', (dropId) => {
+            // Logique pour détruire la drop sur le client
+            const dropElement = this.dropsGroup.getChildren().find(drop => drop.id === dropId);
+            if (dropElement) {
+                dropElement.destroy(); // Détruire l'élément visuel
+                console.log(`Resource avec ID ${dropId} collecté sur le client`);
+                existingDrops.delete(dropId)
+            }
+        });
     }
-  }
 
-  farmableHalfHp(farmableElement, type){
-    switch (type) {
-      case "tree":
-        farmableElement.setFrame(1);
-        break;
-      case "rock":
-        //farmableElement.setFrame(1);  pas encore fait
-        break;
-      default:
-        farmableElement.setFrame(1);
-    }
-  }
-
-  createResource(type, x, y, sizeX, sizeY) {
-    // Générer des positions aléatoires autour du farmable
-    const offsetX = Phaser.Math.Between(-sizeX, sizeX); // Décalage horizontal aléatoire
-    const offsetY = Phaser.Math.Between(-sizeY, sizeY); // Décalage vertical aléatoire
-    const resourceX = x + offsetX;
-    const resourceY = y + offsetY;
-
-    // Créer une instance de ressource dans le groupe à la position générée
-    const resourceElement = this.resourceGroup.create(
-      resourceX,
-      resourceY,
-      type
-    );
-    resourceElement.setDisplaySize(30, 30);
-
-    // Ajouter une physique de collision pour permettre la collecte
-    this.physics.add.overlap(
-      this.player,
-      resourceElement,
-      (player, resource) => {
-        // Quand le joueur marche sur la ressource, elle est collectée
-        this.collectResource(type, 1); // Ajouter la ressource à la collection
-        resource.destroy(); // Supprimer la ressource visuelle après collecte
-      },
-      null,
-      this
-    );
-  }
-
-  collectResource(type, quantity) {
-    // Ajouter des ressources à la collecte globale
-    if (this.resources[type]) {
-      this.resources[type].add(quantity);
-      console.log(
-        `Ressource ${type} collectée: ${quantity}, total: ${this.resources[type].quantity}`
-      );
-    } else {
-      console.log(`Ressource ${type} non définie.`);
-    }
-  }
 }

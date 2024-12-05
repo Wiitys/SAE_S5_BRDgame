@@ -1,8 +1,9 @@
+import socket from '../Modules/socket.js';
+
 export class MenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'scene-menu' });
     }
-
 
     preload() {
         // Charger des ressources si nécessaire (par exemple des images pour les boutons)

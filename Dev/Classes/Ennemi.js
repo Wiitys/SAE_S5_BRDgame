@@ -74,14 +74,14 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
         );
 
         if (distanceSpawnToPlayer > this.searchRange && !this.isHit) {
-            console.log(`joueur sorti de la zone de recherche, retour au point d'apparition`)
+            //console.log(`joueur sorti de la zone de recherche, retour au point d'apparition`)
             this.patrol();
             
         // Si l'ennemi est à plus de sa range du joueur, il continue de se déplacer
         } else if (this.distanceToTarget >= this.attackRange || this.isHit) {
             this.isPatrolling = false;
             
-            console.log("joueur trouvé, poursuite lancée")
+            //console.log("joueur trouvé, poursuite lancée")
             this.scene.physics.moveToObject(this, this.target, this.speed);
 
         // Arrête l'ennemi s'il est à moins de sa range du joueur
@@ -117,14 +117,14 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
         );
 
         if (!this.isHit) {
-            console.log(`joueur sorti de la zone de recherche, retour au point d'apparition`)
+            //console.log(`patroling`)
             this.patrol();
             
         // Si l'ennemi est à plus de sa range du joueur, il continue de se déplacer
         } else if (this.distanceToTarget >= this.attackRange && this.isHit) {
             this.isPatrolling = false;
             
-            console.log("joueur trouvé, poursuite lancée")
+            //console.log("pursuit")
             this.scene.physics.moveToObject(this, this.target, this.speed);
 
         // Arrête l'ennemi s'il est à moins de sa range du joueur
