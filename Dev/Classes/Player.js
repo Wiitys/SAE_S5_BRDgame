@@ -195,6 +195,52 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  rangedAttack(attackRange, attackDamageEntities) {
+
+    // Calculer le centre de la hitbox du joueur
+    const { centerX, centerY } = this.getBounds();
+
+    const projectile = this.scene.projectiles.create(centerX, centerY, 'projectileTexture'); // Sprite pour le projectile
+    
+    // Obtenir l'angle d'attaque en fonction de la dernière direction
+    const attackRotation = this.getAttackRotation();
+
+    const direction = new Phaser.Math.Vector2();
+    direction.setToPolar(attackRotation, 1); // Le deuxième paramètre est la longueur (1 pour normalisé)
+
+    // Définir la vitesse de déplacement
+    const speed = 150; // pixels par seconde
+
+    const pointer = this.scene.input.activePointer; // Récupère la position de la souris
+    const mouseX = pointer.worldX;
+    const mouseY = pointer.worldY;
+
+    this.scene.physics.moveTo(projectile, mouseX, mouseY, speed);
+
+    
+    // Liste des cibles potentielles
+    const players = this.scene.otherPlayerSprites;
+    
+    // Vérifier les collisions dans le cône pour chaque type de cible
+    players.forEach(target => {
+      this.scene.physics.add.collider(projectile, target, () => {
+        // Actions lors de la collision avec la cible
+        if (target.takeDamage) {
+            target.takeDamage(attackDamageEntities); // Inflige des dégâts si la cible a une méthode `takeDamage`
+        }
+        projectile.destroy(); // Détruit le projectile après avoir touché la cible
+        console.log('cible touchée')
+      });
+    });
+    
+    // Détruire le projectile après un délai s'il ne touche rien
+    this.scene.time.delayedCall(3000, () => {
+      if (projectile.active) {
+        projectile.destroy();
+      }
+    });
+  }
+
   // Méthode pour afficher la hitbox du cône avec des paramètres passés
   showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle) {
     this.attackConeGraphic.clear(); // Effacer les anciens dessins
@@ -257,6 +303,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   equipTool(tool) {
     this.equippedTool = tool;
     console.log(tool.type)
+    console.log(tool.isRanged)
     // Si un outil est déjà affiché, changez son sprite
     if (this.toolSprite) {
         this.toolSprite.setTexture(this.equippedTool.type);
@@ -284,7 +331,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
       if(this.equippedTool) {
-        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
+        if(!this.equippedTool.isRanged) {
+          this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
+        } else {
+          this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage)
+        }
       } else {
         this.attackCone();
       }

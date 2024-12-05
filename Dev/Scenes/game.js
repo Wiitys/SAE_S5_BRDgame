@@ -9,7 +9,6 @@ import Player from "../Classes/Player.js";
 import socket from '../Modules/socket.js';
 
 var otherPlayers;
-var otherPlayerSprites;
 var existingFarmables;
 var existingDrops;
 
@@ -19,6 +18,8 @@ export class GameScene extends Phaser.Scene {
     this.cursor;
     this.farmableGroup;
     this.dropsGroup;
+    this.otherPlayerSprites;
+    this.projectiles;
   }
 	
 	preload() {
@@ -48,7 +49,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
     otherPlayers = [];
-    otherPlayerSprites = [];
+    this.otherPlayerSprites = [];
     existingFarmables = new Set();
     existingDrops = new Set();
     
@@ -56,6 +57,8 @@ export class GameScene extends Phaser.Scene {
     this.farmableGroup = this.physics.add.group();
     // Initialiser le groupe des drops
     this.dropsGroup = this.physics.add.group();
+    // Initialiser le groupe des projectiles
+    this.projectiles = this.physics.add.group();
 
     this.syncFarmables();
     this.syncDrops();
@@ -182,10 +185,10 @@ export class GameScene extends Phaser.Scene {
         socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
 
         socket.on('updatePlayers', (data) => {
-            if(otherPlayerSprites[0] != undefined){
-                for (const sprite of otherPlayerSprites) {
+            if(this.otherPlayerSprites[0] != undefined){
+                for (const sprite of this.otherPlayerSprites) {
                     sprite.destroy(true)
-                    otherPlayerSprites = [];
+                    this.otherPlayerSprites = [];
                 }
             }
             otherPlayers = data;
@@ -198,7 +201,7 @@ export class GameScene extends Phaser.Scene {
                         var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
                         newPlayer.setImmovable(true);
                         newPlayer.body.allowGravity = false;
-                        otherPlayerSprites.push(newPlayer);
+                        this.otherPlayerSprites.push(newPlayer);
                     }
                 }
             }

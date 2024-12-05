@@ -1,5 +1,6 @@
 import Ressource from "./Ressource";
 import Tool from "./Tool";
+import RangedWeapon from "./RangedWeapon.js"
 import Craftable from "./Craftable";
 import socket from '../Modules/socket.js';
 
@@ -16,13 +17,15 @@ export default class Inventory {
 			woodenAxe: new Craftable("Tool", "woodenAxe", 1, {plank: 3, stick: 2}),
 			woodenPickaxe: new Craftable("Tool", "woodenPickaxe", 1, {plank: 3, stick: 2}),
 			stoneAxe: new Craftable("Tool", "stoneAxe", 1, {stone: 3, stick: 2}),
-			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2})
+			stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, {stone: 3, stick: 2}),
+            bow: new Craftable("Tool", "bow", 1, {stick: 2}),
 		};
         this.tools = {
             woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 20, 3, 2),
             stonePickaxe: new Tool('stonePickaxe', 1, 45, 90, 4, 3),
             woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
             stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
+            bow: new RangedWeapon('bow', 1),
         };
         this.itemSelected = null;
         this.itemButtons = {};
@@ -56,7 +59,7 @@ export default class Inventory {
     }
 
     getTools() {
-        return Object.keys(this.inventory).filter((key) => this.inventory[key] instanceof Tool);
+        return Object.keys(this.inventory).filter((key) => this.inventory[key] instanceof Tool || this.inventory[key] instanceof RangedWeapon);
     }
 
     createUI() {
@@ -101,6 +104,7 @@ export default class Inventory {
 
         // Boutons de craft
         const buttonData = [
+            { label: "bow", x: 0.10, y: 0.95, key: "bow" },
             { label: "Stick", x: 0.25, y: 0.85, key: "stick" },
             { label: "Plank", x: 0.25, y: 0.95, key: "plank" },
             { label: "Wooden Axe", x: 0.5, y: 0.85, key: "woodenAxe" },
@@ -176,7 +180,7 @@ export default class Inventory {
         Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
         this.unequipButton.setStyle({fill: '#fff'});
         button.setStyle({ fill: '#ff0' });
-
+        
         this.scene.player.equipTool(this.inventory[key]);
         console.log(`Outil sélectionné : ${key}`);
     }
