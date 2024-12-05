@@ -5,24 +5,24 @@ export default class Farmable{
     this.currentHp = maxHp;
     this.hasSwapped = false;
   }
-
+  
   set(type, maxHp, currentHp){
-      this.type = type;
-      this.maxHp = maxHp;
-      this.currentHp = currentHp;
+    this.type = type;
+    this.maxHp = maxHp;
+    this.currentHp = currentHp;
   }
-
+  
   hit() {
     this.currentHp--;
   }
-
+  
   isHalfHp() {
     if(this.currentHp <= this.maxHp/2 && this.currentHp > 0){
       this.hasSwapped = true
     }
     return (this.currentHp <= this.maxHp/2 && this.currentHp > 0)
   }
-
+  
   isDestroyed() {
     return this.currentHp <= 0;
   }

@@ -8,8 +8,8 @@ const path = require('path');
 var players = [];
 var farmables = [];
 let farmableCounter = 0;
-var resources = [];
-let resourceCounter = 0;
+var drops = [];
+let dropCounter = 0;
 
 // Configuration des farmables
 const FARMABLE_TYPES = ["tree", "rock"];
@@ -90,24 +90,24 @@ ioServer.on('connection', (socket) => {
         }
     });
 
-    /// Émettre la liste des resources à tous les joueurs
-    socket.on('requestResources', () => {
-        socket.emit('resourceList', resources);
+    /// Émettre la liste des drops à tous les joueurs
+    socket.on('requestDrops', () => {
+        socket.emit('dropList', drops);
     });
     
-    socket.on('createResource', (resource) => {
-        createResource(resource.type, resource.x, resource.y);
-        console.log('create resource')
+    socket.on('createDrop', (drop) => {
+        createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y);
+        console.log(`create drop ${drop.quantity}`)
     });
 
-    socket.on('collectResource', (resourceId) => {
-        const index = resources.findIndex(resource => resource.id === resourceId);
+    socket.on('collectDrop', (dropId) => {
+        const index = drops.findIndex(drop => drop.id === dropId);
         if (index !== -1) {
-            const resource = resources.splice(index, 1)[0];
-            console.log(`Resource collected: ${resourceId}`);
+            const drop = drops.splice(index, 1)[0];
+            console.log(`drop collected: ${dropId}`);
             
             // Informer tous les clients de la destruction
-            ioServer.emit('resourceCollected', resourceId);
+            ioServer.emit('dropCollected', dropId);
         }
     });
 });
@@ -116,8 +116,8 @@ function generateUniqueFarmableId() {
     return `farmable-${farmableCounter++}`; // Générer un ID unique basé sur un compteur
 }
 
-function generateUniqueResourceId() {
-    return `resource-${resourceCounter++}`; // Générer un ID unique basé sur un compteur
+function generateUniqueDropId() {
+    return `drop-${dropCounter++}`; // Générer un ID unique basé sur un compteur
 }
 
 // Fonction pour créer un farmable
@@ -145,9 +145,9 @@ function destroyFarmable(farmableId, index){
     }, 10000); // délai de 10 secondes
 }
 
-// Fonction pour créer une ressource
-function createResource(type, x, y) {
-    const ressource = { id: generateUniqueResourceId(), type: type, x: x, y: y };
-    resources.push(ressource);
-    ioServer.emit('resourceCreated', ressource);
+// Fonction pour créer une drop
+function createDrop(category, type, quantity, x, y) {
+    const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, x: x, y: y };
+    drops.push(drop);
+    ioServer.emit('dropCreated', drop);
 }

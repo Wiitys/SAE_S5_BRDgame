@@ -1,5 +1,4 @@
-import HealthBar from "../Classes/HealthBar.js";
-import Farmable from "../Classes/Farmable.js";
+import HealthBar from "./HealthBar.js";
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
 
@@ -11,7 +10,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     
     this.scene = scene;
-    this.setOrigin(0, 0);
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
     
@@ -20,7 +18,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.damageReduction = 0;
     this.playerSpeed = 200;
     this.lastDirection = "up";
-    this.isEquipped = false;
+    this.equippedTool = null;
+    this.toolSprite = null;
     this.cursor = scene.input.keyboard.createCursorKeys();
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
@@ -248,10 +247,35 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       //logique pour infliger des dommages aux ennemies
     }
     else if(target.isPlayer){
-      target.takeDamage(10); 
+      target.takeDamage(attackDamageEntities); 
     }
     else{
-      this.scene.hitFarmable(this, target);
+      this.scene.hitFarmable(this, target, attackDamageFarmables);
+    }
+  }
+
+  equipTool(tool) {
+    this.equippedTool = tool;
+    console.log(tool.type)
+    // Si un outil est déjà affiché, changez son sprite
+    if (this.toolSprite) {
+        this.toolSprite.setTexture(this.equippedTool.type);
+        this.toolSprite.setDisplaySize(12,24)
+        console.log("outil changé")
+    } else {
+        // Sinon, créez le sprite pour l'outil
+        this.toolSprite = this.scene.add.sprite(this.x + 16, this.y, this.equippedTool.type);
+        this.toolSprite.setDisplaySize(12,24)
+        console.log("outil créé")
+    }
+  }
+
+  unequipTool() {
+    this.equippedTool = null;
+    
+    if(this.toolSprite){
+      this.toolSprite.destroy();
+      this.toolSprite = null;
     }
   }
 
@@ -259,14 +283,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.isEquipped){
-        //
-      }else{
+      if(this.equippedTool) {
+        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
+      } else {
         this.attackCone();
       }
     }
 
+    if(this.equippedTool){
+      this.toolSprite.setPosition(this.x + 16, this.y);
+    }
+    
     if (this.playerHP.currentHealth <= 0) {
+      this.scene.inventory.dropInventory(this.x, this.y, this.displayWidth, this.displayHeight)
       this.scene.scene.start("scene-menu");
     }
   }
