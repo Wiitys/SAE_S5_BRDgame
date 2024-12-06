@@ -80,25 +80,6 @@ export default class InventoryUI {
             const { quantity } = this.inventory.inventory[key];
             this.inventoryText.appendText(`\n${key}: ${quantity}`);
         });
-
-        Object.values(this.itemButtons).forEach(button => button.destroy());
-
-        const tools = this.inventory.getTools();
-        tools.forEach((tool, index) => {
-            const button = this.scene.add.text(
-                this.scene.cameras.main.width * 0.1,
-                this.scene.cameras.main.height * 0.1 + index * 20,
-                tool,
-                { fontSize: '16px', fill: '#fff' }
-            )
-                .setInteractive()
-                .setScrollFactor(0)
-                .on('pointerdown', () => {
-                    this.selectEquippedItem(tool, button)
-                });
-
-            this.itemButtons[tool] = button
-        });
     }
 
     selectCraftItem(key, button) {
@@ -127,12 +108,5 @@ export default class InventoryUI {
         } else {
             this.showUI();
         }
-    }
-
-    selectEquippedItem(key, button) {
-        this.inventory.itemSelected = key;
-        Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
-        button.setStyle({ fill: '#ff0' });
-        this.inventory.equipItem(key);
     }
 }

@@ -5,7 +5,9 @@ import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
 import Inventory from "../Classes/Inventory.js";
 import InventoryUI from '../Classes/InventoryUI';
-import Hotbar from '../Classes/Hotbar';
+import HotbarManagement from '../Classes/HotbarManagement.js';
+import HotbarUI from '../Classes/HotbarUI.js';
+
 import Player from "../Classes/Player.js";
 
 import socket from '../Modules/socket.js';
@@ -28,7 +30,6 @@ export class GameScene extends Phaser.Scene {
         woodenPickaxe: new Drop('woodenPickaxe'),
     };
     this.dropsGroup;
-    this.hotbarKeys = [];
   }
 	
 	preload() {
@@ -72,7 +73,8 @@ export class GameScene extends Phaser.Scene {
     
     this.inventory = new Inventory(this);
     this.inventoryUI = new InventoryUI(this, this.inventory);
-    this.hotbar = new Hotbar(this, this.inventory);
+    this.hotbarManagement = new HotbarManagement(this.inventory);
+    this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
 
 
 	// Exemple : Ajouter des ressources pour tester
@@ -83,7 +85,6 @@ export class GameScene extends Phaser.Scene {
     this.inventory.addItem("Tool", "woodenPickaxe", 1);
 
     this.inventoryUI.updateInventoryText();
-    this.hotbar.updateHotbar();
 
 
     this.tools = {
@@ -194,7 +195,6 @@ export class GameScene extends Phaser.Scene {
         if (this.drops[drop.type]) {
             this.inventory.addItem(drop.category, drop.type, drop.quantity)
             this.inventoryUI.updateInventoryText();
-            this.hotbar.updateHotbar();
             console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
             socket.emit('collectDrop', id);
         } else {

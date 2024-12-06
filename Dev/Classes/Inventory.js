@@ -19,6 +19,15 @@ export default class Inventory {
             stoneAxe: new Tool('stoneAxe', 1, 60, 60, 3, 2),
             woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 35, 3, 2),
         };
+        this.callbacks = []; 
+    }
+
+    onInventoryUpdate(callback) {
+        this.callbacks.push(callback);
+    }
+
+    triggerUpdate() {
+        this.callbacks.forEach(callback => callback());
     }
 
     addItem(category, type, quantity) {
@@ -29,6 +38,7 @@ export default class Inventory {
         } else if (category === "Tool") {
             this.inventory[type] = this.tools[type];
         }
+        this.triggerUpdate();
     }
 
     removeItem(type, quantity) {
@@ -41,6 +51,7 @@ export default class Inventory {
         if (this.inventory[type] && this.inventory[type].quantity <= 0) {
             delete this.inventory[type];
         }
+        this.triggerUpdate();
     }
 
     hasItem(type, quantity) {
@@ -82,4 +93,9 @@ export default class Inventory {
         this.scene.player.equipTool(this.inventory[key]);
         console.log(`Outil sélectionné : ${key}`);
     }
+
+    getItemQuantity(key) {
+        return this.inventory[key]?.quantity || 0;
+    }
+    
 }

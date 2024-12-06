@@ -1,10 +1,8 @@
 export default class Hotbar {
-    constructor(scene, inventory) {
+    constructor(scene, HotbarManager) {
         this.scene = scene;
-        this.inventory = inventory; // Référence à l'inventaire principal
         this.hotbarSlots = []; // Liste des slots de la hotbar
-        this.nbSlots = 8;
-        this.selectedSlot = 0; // Indice du slot sélectionné
+        this.manager = HotbarManager;
         this.slotSize = 50; // Taille des slots
 
         this.createHotbar();
@@ -16,11 +14,11 @@ export default class Hotbar {
         // Écouteur pour la sélection par touches du clavier
         this.scene.input.keyboard.on('keydown', (event) => {
             if (event.key === '1') {
-                this.selectSlot(0);  
+                this.manager.selectSlot(0);  
             } else if (event.key === '2') {
-                this.selectSlot(1);  
+                this.manager.selectSlot(1);  
             } else if (event.key === '3') {
-                this.selectSlot(2);  
+                this.manager.selectSlot(2);  
             } else if (event.key === '4') {
                 this.selectSlot(3);  
             } else if (event.key === '5') {
@@ -34,14 +32,17 @@ export default class Hotbar {
             }
             // Ajoute d'autres touches pour les autres slots si nécessaire
         });
+
+        this.manager.onHotbarUpdate(() => this.updateHotbar());
+        this.manager.inventory.onInventoryUpdate(() => this.updateHotbar());
     }
 
     createHotbar() {
         const hotbarY = this.scene.cameras.main.height - this.slotSize - 10; // Position verticale avec une marge
-        const totalWidth = this.nbSlots * (this.slotSize + 4); // Largeur totale de la Hotbar
+        const totalWidth = this.manager.getNbSlots() * (this.slotSize + 4); // Largeur totale de la Hotbar
         const startX = (this.scene.cameras.main.width - totalWidth) / 2; // Départ pour centrer la Hotbar
 
-        for (let i = 0; i < this.nbSlots; i++) {
+        for (let i = 0; i < this.manager.getNbSlots(); i++) {
             const x = startX + i * (this.slotSize + 2); // Position de chaque slot
 
             // Crée un slot graphique
@@ -78,15 +79,14 @@ export default class Hotbar {
 
     updateHotbar() {
         // Récupère les items de l'inventaire pour les afficher dans la hotbar
-        const items = Object.keys(this.inventory.inventory);
-        console.log("Updating Hotbar with items:", items);
+        const items = this.manager.getSlots(); 
 
         for (let i = 0; i < this.hotbarSlots.length; i++) {
             const { nameText, quantityText, slot } = this.hotbarSlots[i];
 
             if (items[i]) {
                 const item = items[i];
-                const quantity = this.inventory.inventory[item].quantity;
+                const quantity = this.manager.inventory.inventory[item].quantity;
 
                 // Mettre à jour le texte du nom
                 nameText.setText(item);
@@ -94,26 +94,16 @@ export default class Hotbar {
                 // Mettre à jour le texte de la quantité
                 quantityText.setText(quantity > 1 ? `${quantity}` : '');
             } else {
-                nameText.setText(''); // Vide si pas d'objet
-                quantityText.setText(''); // Vide si pas d'objet
+                nameText.setText('');
+                quantityText.setText('');
             }
 
             // Met à jour la bordure pour indiquer la sélection
-            slot.setStrokeStyle(2, i === this.selectedSlot ? 0xffff00 : 0xffffff);
+            slot.setStrokeStyle(2, i === this.manager.selectedSlot ? 0xffff00 : 0xffffff);
         }
     }
 
-    selectSlot(index) {
-        if (index >= 0 && index < this.hotbarSlots.length) {
-            this.selectedSlot = index; 
-            this.updateHotbar();
 
-            const itemKey = Object.keys(this.inventory.inventory)[index]; 
-            if (itemKey) {
-                this.inventory.equipItem(itemKey); 
-            }
-        }
-    }
 
     onResize(gameSize) {
         const { width, height } = gameSize;
