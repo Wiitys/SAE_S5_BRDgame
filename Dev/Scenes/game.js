@@ -22,13 +22,6 @@ export class GameScene extends Phaser.Scene {
     super("scene-game");
     this.cursor;
     this.farmableGroup;
-    this.drops = {
-        wood: new Drop("Ressource", "wood"),
-        stone: new Drop("Ressource", "stone"),
-        meat: new Drop("Ressource", "meat"),
-        stoneAxe: new Drop('stoneAxe'),
-        woodenPickaxe: new Drop('woodenPickaxe'),
-    };
     this.dropsGroup;
   }
 	
@@ -166,7 +159,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     createDrop(category, type, quantity, x, y, id) {
-        
+
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
             x,
@@ -182,8 +175,13 @@ export class GameScene extends Phaser.Scene {
             dropElement,
             () => {
                 // Quand le joueur marche sur le drop, elle est collectée
-                this.collectDrop(dropElement.dropData, dropElement.id);
-                dropElement.destroy();
+                // Tente de collecter le drop
+                if (this.collectDrop(dropElement.dropData, dropElement.id)) {
+                    dropElement.destroy();
+                } else {
+                    dropElement.setTint(0xff0000); // Rougir temporairement pour indiquer l'échec
+                    this.time.delayedCall(200, () => dropElement.clearTint());
+                }
             },
             null,
             this
@@ -192,13 +190,20 @@ export class GameScene extends Phaser.Scene {
     
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
-        if (this.drops[drop.type]) {
-            this.inventory.addItem(drop.category, drop.type, drop.quantity)
-            this.inventoryUI.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
-            socket.emit('collectDrop', id);
+        if (drop.type) {
+            if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
+                this.inventory.addItem(drop.category, drop.type, drop.quantity);
+                this.inventoryUI.updateInventoryText();
+                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type]?.quantity}`);
+                socket.emit('collectDrop', id);
+                return true;
+            } else {
+                console.log(`Impossible de collecter ${drop.type}, inventaire plein.`);
+                return false;
+            }
         } else {
-            console.log(`drop ${drop.type} non définie.`);
+            console.log(`Drop ${drop.type} non défini.`);
+            return false;
         }
     }
     

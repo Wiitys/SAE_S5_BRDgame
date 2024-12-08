@@ -2,7 +2,6 @@ export default class InventoryUI {
     constructor(scene, inventory) {
         this.scene = scene;
         this.inventory = inventory;
-
         this.inventoryText = null;
         this.craftButtons = {};
         this.itemButtons = {};
