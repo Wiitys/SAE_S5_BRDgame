@@ -1,20 +1,65 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BRD Game</title>
-  </head>
-  <body>
-    <header><p>Dev du jeu</p></header>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - Survie.io</title>
+    <link rel="icon" href="./img/Logo.webp" type="image/webp">
+    <link rel="stylesheet" href="styleWeb.css"> <!-- Lien vers la style -->
+</head>
+<body>
+    <header>
+        <h1>Bienvenue dans <span class="game-title">Survie.io</span>!</h1>
+        <nav>
+            <ul class="menu">
+                <li><a href="#jouer">Jouer</a></li>
+                <li><a href="#histoire">Histoire</a></li>
+                <li><a href="#classement">Classement</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
 
     <main>
-      <canvas id="gameCanvas"></canvas>
-    </main>
+        <section id="introduction">
+            <h2>Entrez dans l'aventure</h2>
+            <p>Préparez-vous à vivre une expérience unique dans un monde apocalyptique, où vous serez livré 
+                à vous-même pour survivre. Parviendrez-vous à devenir le héros et à décrocher la première place du classement ?</p>
+            <button onclick="location.href='game.html'" class="play-button">Commencer à jouer</button>
+        </section>
 
-    <footer><p>Créé par notre groupe</p></footer>
-    <script type="module" src="/main.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
-  </body>
+        <section id="histoire">
+            <h2>L'Histoire</h2>
+            <p>Plongez dans un univers apocalyptique où chaque choix peut changer le cours de votre destinée. Explorez la carte, 
+                affrontez des ennemis redoutables, récoltez des ressources pour fabriquer des objets, et devenez une véritable légende.</p>
+        </section>
+
+        <section id="jouer">
+            <h2>Comment jouer</h2>
+            <p>Choisissez votre mode : solo ou multijoueur. 
+               Connectez-vous pour sauvegarder vos progrès et participer aux classements mondiaux.</p>
+               <button onclick="location.href='game.html'" class="play-button">Lancer le jeu</button>
+        </section>
+
+        <section id="classement">
+            <h2>Classement</h2>
+            <p>Voyez qui domine le jeu cette semaine :</p>
+            <ul class="leaderboard">
+                <li>1. Liam - 1500 points</li>
+                <li>2. Justin - 1300 points</li>
+                <li>3. Démon - 1200 points</li>
+            </ul>
+        </section>
+        <section id="projet">
+            <h2>Projet BRDGame</h2>
+            <p>Projet de SAE du semestre 5 du BUT Informatique à l’IUT d’Amiens de (Liam Target, Justin Largilliere, 
+                Lorenzo Vatrin, Lucas Gonthier, Malcolm Walter, Victor Da Silva Lourenco Marques)</p>
+        </section>
+    </main>
+    
+    <footer id="contact">
+        <p>Pour toute question ou suggestion, contactez-nous : <a href="mailto:support@monjeu.com">support@BRDGame.com</a></p>
+        <p>&copy; 2024 Survie.io. <a href="droits.html">Tous droits réservés.</a></p>
+    </footer>
+</body>
 </html>
