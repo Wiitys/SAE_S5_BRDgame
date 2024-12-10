@@ -7,7 +7,9 @@ export default class InventoryUI {
         this.itemButtons = {};
         this.craftButton = null;
         this.craftSelected = null;
-        this.visible = false; 
+        this.visible = false;
+        this.toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+        this.toggleKey.on('down', () => this.toggleUI()); 
 
         this.initUI();
         this.hideUI();
@@ -76,7 +78,7 @@ export default class InventoryUI {
     updateInventoryText() {
         this.inventoryText.setText('');
         Object.keys(this.inventory.inventory).forEach(key => {
-            const { quantity } = this.inventory.inventory[key];
+            const quantity = this.inventory.inventory[key].item.quantity;
             this.inventoryText.appendText(`\n${key}: ${quantity}`);
         });
     }

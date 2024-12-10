@@ -4,9 +4,10 @@ import Craftable from "./Craftable";
 import socket from '../Modules/socket.js';
 
 export default class Inventory {
-    constructor(scene, maxSlots = 5) {
+    constructor(scene, maxSlots = 10) {
         this.scene = scene; // Référence à la scène Phaser
         this.inventory = {};
+        this.slots = [];
         this.maxSlots = maxSlots;
         this.craftSelected = null;
         this.craftables = {
@@ -45,36 +46,49 @@ export default class Inventory {
     }
 
     addItem(category, type, quantity) {
+
+        let slot = this.slots.findIndex(s => s === null);
+        if (slot === -1) {
+            if (this.slots.length < this.maxSlots) {
+                slot = this.slots.length;
+                this.slots.push(null); // Étend la liste des slots
+            } else {
+                console.log("Inventaire plein !");
+                return;
+            }
+        }
+
         if (this.inventory[type]) {
             // Augmenter la quantité si l'objet existe déjà
-            this.inventory[type].quantity += quantity;
+            this.inventory[type].item.quantity += quantity;
+            //console.log(this.inventory[type].item.quantity)
         } else if (category === "Ressource") {
-            this.inventory[type] = new Ressource(type, quantity);
+            this.inventory[type] = {item: new Ressource(type, quantity), slot: slot};
         } else if (category === "Tool") {
-            this.inventory[type] = this.tools[type];
+            this.inventory[type] = {item: this.tools[type], slot: slot};
         }
         this.triggerUpdate();
     }
 
     removeItem(type, quantity) {
-        if (this.inventory[type] && this.inventory[type].quantity >= quantity) {
-            this.inventory[type].quantity -= quantity;
+        if (this.inventory[type] && this.inventory[type].item.quantity >= quantity) {
+            this.inventory[type].item.quantity -= quantity;
         } else {
             console.log(`${type} introuvable ou quantité insuffisante.`);
         }
 
-        if (this.inventory[type] && this.inventory[type].quantity <= 0) {
+        if (this.inventory[type] && this.inventory[type].item.quantity <= 0) {
             delete this.inventory[type];
         }
         this.triggerUpdate();
     }
 
     hasItem(type, quantity) {
-        return this.inventory[type] && this.inventory[type].quantity >= quantity;
+        return this.inventory[type] && this.inventory[type].item.quantity >= quantity;
     }
 
     getTools() {
-        return Object.keys(this.inventory).filter(key => this.inventory[key] instanceof Tool);
+        return Object.keys(this.inventory).filter(key => this.inventory[key].item instanceof Tool);
     }
 
 
@@ -84,7 +98,7 @@ export default class Inventory {
         this.unequipButton.setStyle({fill: '#fff'});
         button.setStyle({ fill: '#ff0' });
 
-        this.scene.player.equipTool(this.inventory[key]);
+        this.scene.player.equipTool(this.inventory[key].item);
         console.log(`Outil sélectionné : ${key}`);
     }
 
@@ -110,6 +124,7 @@ export default class Inventory {
                 if (selectedCraftable.isCraftable(this)) {
                     selectedCraftable.craft(this, selectedCraftable.category);
                     console.log(`${craftSelected} a été crafté avec succès.`);
+                    return true;
                 } else {
                     console.log("L'objet sélectionné n'est pas craftable.");
                 }
@@ -132,7 +147,7 @@ export default class Inventory {
         const requiredItems = craftable.recipe;
     
         for (const [item, quantity] of Object.entries(requiredItems)) {
-            if (this.inventory[item] && this.inventory[item].quantity <= quantity) {
+            if (this.inventory[item] && this.inventory[item].item.quantity <= quantity) {
                 return true;
             }
         }
@@ -142,9 +157,9 @@ export default class Inventory {
     dropInventory(x, y, displayWidth, displayHeight) {
         Object.keys(this.inventory).forEach(element => {
             const drop = {
-                category: this.inventory[element].constructor.name,
-                type: this.inventory[element].type,
-                quantity: this.inventory[element].quantity,
+                category: this.inventory[element].item.constructor.name,
+                type: this.inventory[element].item.type,
+                quantity: this.inventory[element].item.quantity,
                 x: x + displayWidth / 2 + Phaser.Math.Between(-32, 32),
                 y: y + displayHeight / 2 + Phaser.Math.Between(-32, 32),
             };
@@ -154,12 +169,12 @@ export default class Inventory {
     }
     
     equipItem(key){
-        this.scene.player.equipTool(this.inventory[key]);
+        this.scene.player.equipTool(this.inventory[key].item);
         console.log(`Outil sélectionné : ${key}`);
     }
 
     getItemQuantity(key) {
-        return this.inventory[key]?.quantity || 0;
+        return this.inventory[key].item?.quantity || 0;
     }
     
 }

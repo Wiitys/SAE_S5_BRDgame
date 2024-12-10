@@ -1,9 +1,14 @@
+import Tool from './Tool.js'
+
 export default class Hotbar {
     constructor(scene, HotbarManager) {
         this.scene = scene;
         this.hotbarSlots = []; // Liste des slots de la hotbar
         this.manager = HotbarManager;
         this.slotSize = 50; // Taille des slots
+        this.visible = true;
+        this.toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+        this.toggleKey.on('down', () => this.toggleUI());
 
         this.createHotbar();
         this.updateHotbar();
@@ -86,13 +91,13 @@ export default class Hotbar {
 
             if (items[i]) {
                 const item = items[i];
-                const quantity = this.manager.inventory.inventory[item].quantity;
+                const quantity = this.manager.inventory.inventory[item].item.quantity;
 
                 // Mettre à jour le texte du nom
                 nameText.setText(item);
 
                 // Mettre à jour le texte de la quantité
-                quantityText.setText(quantity > 1 ? `${quantity}` : '');
+                quantityText.setText(quantity > 1 || !(this.manager.inventory.inventory[item].item instanceof Tool) ? `${quantity}` : '');
             } else {
                 nameText.setText('');
                 quantityText.setText('');
@@ -126,6 +131,32 @@ export default class Hotbar {
                 x + this.slotSize / 2 - 5, // Position X : coin droit du slot
                 hotbarY + this.slotSize / 2 - 5 // Position Y : coin bas du slot
             );
+        }
+    }
+
+    showUI() {
+        this.visible = true;
+        this.hotbarSlots.forEach(({ slot, nameText, quantityText }) => {
+            slot.visible = true;
+            nameText.visible = true;
+            quantityText.visible = true;
+        });
+    }
+
+    hideUI() {
+        this.visible = false;
+        this.hotbarSlots.forEach(({ slot, nameText, quantityText }) => {
+            slot.visible = false;
+            nameText.visible = false;
+            quantityText.visible = false;
+        });
+    }
+
+    toggleUI() {
+        if (this.visible) {
+            this.hideUI();
+        } else {
+            this.showUI();
         }
     }
 }

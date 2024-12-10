@@ -87,9 +87,6 @@ export class GameScene extends Phaser.Scene {
 
     // Exemple : Équipez un outil
     this.player.equipTool('stoneAxe');
-
-    this.toggleKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
-    this.toggleKey.on('down', () => this.inventoryUI.toggleUI());
   }
   
   update() {
