@@ -180,10 +180,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         // Vérifier la distance par rapport au range
         if (distance <= attackRange) {
           const TargetAngle = Math.atan2(dy, dx);
-          const angleDifference = Phaser.Math.Angle.Wrap(TargetAngle - attackRotation);
+          const angleDifference = Math.abs(Phaser.Math.Angle.Wrap(TargetAngle - attackRotation));
 
           // Vérifier si le point est dans l'angle d'attaque
-          return Math.abs(angleDifference) <= attackConeAngle;
+          console.log('Angle cible:', TargetAngle, 'Angle attaque:', attackRotation, 'Différence:', angleDifference);
+ 
+          return Math.abs(angleDifference) <= attackConeAngle / 2;
         }
         return false;
       });
