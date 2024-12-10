@@ -3,7 +3,7 @@ import Drop from "../Classes/Drop.js";
 import Farmable from "../Classes/Farmable.js";
 import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
-import Inventory from "../Classes/Inventory.js";
+import Inventory from "../Classes/InventoryManagement.js";
 import InventoryUI from '../Classes/InventoryUI';
 import HotbarManagement from '../Classes/HotbarManagement.js';
 import HotbarUI from '../Classes/HotbarUI.js';

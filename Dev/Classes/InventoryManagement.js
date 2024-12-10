@@ -1,6 +1,6 @@
-import Ressource from "./Ressource";
-import Tool from "./Tool";
-import Craftable from "./Craftable";
+import Ressource from "./Ressource.js";
+import Tool from "./Tool.js";
+import Craftable from "./Craftable.js";
 import socket from '../Modules/socket.js';
 
 export default class Inventory {
@@ -8,6 +8,11 @@ export default class Inventory {
         this.scene = scene; // Référence à la scène Phaser
         this.inventory = {};
         this.slots = [];
+
+        for(var i = 0; i < maxSlots; i++) {
+            this.slots.push(0)
+        }
+
         this.maxSlots = maxSlots;
         this.craftSelected = null;
         this.craftables = {
@@ -47,15 +52,10 @@ export default class Inventory {
 
     addItem(category, type, quantity) {
 
-        let slot = this.slots.findIndex(s => s === null);
+        let slot = this.slots.findIndex(s => s === 0);
         if (slot === -1) {
-            if (this.slots.length < this.maxSlots) {
-                slot = this.slots.length;
-                this.slots.push(null); // Étend la liste des slots
-            } else {
-                console.log("Inventaire plein !");
-                return;
-            }
+            console.log("Inventaire plein !");
+            return;
         }
 
         if (this.inventory[type]) {
@@ -67,6 +67,7 @@ export default class Inventory {
         } else if (category === "Tool") {
             this.inventory[type] = {item: this.tools[type], slot: slot};
         }
+        this.slots[slot] = 1;
         this.triggerUpdate();
     }
 

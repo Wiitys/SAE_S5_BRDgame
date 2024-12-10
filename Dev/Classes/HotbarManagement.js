@@ -17,8 +17,13 @@ export default class HotbarManager {
         this.callbacks.forEach(callback => callback());
     }
 
-    getSlots() {
+    getInventory() {
         return Object.keys(this.inventory.inventory);   
+    }
+
+    //méthode récupérant les slots utilisés 1 ou non 0
+    getSlots() {
+        return this.inventory.slots;
     }
 
     getNbSlots() {

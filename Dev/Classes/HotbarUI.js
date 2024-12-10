@@ -25,15 +25,15 @@ export default class Hotbar {
             } else if (event.key === '3') {
                 this.manager.selectSlot(2);  
             } else if (event.key === '4') {
-                this.selectSlot(3);  
+                this.manager.selectSlot(3);
             } else if (event.key === '5') {
-                this.selectSlot(4);  
+                this.manager.selectSlot(4);
             } else if (event.key === '6') {
-                this.selectSlot(5);  
+                this.manager.selectSlot(5); 
             } else if (event.key === '7') {
-                this.selectSlot(6); 
+                this.manager.selectSlot(6);
             } else if (event.key === '8') {
-                this.selectSlot(7);  
+                this.manager.selectSlot(7); 
             }
             // Ajoute d'autres touches pour les autres slots si nécessaire
         });
