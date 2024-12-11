@@ -10,6 +10,7 @@ import socket from '../Modules/socket.js';
 
 var existingFarmables;
 var existingDrops;
+var existingProjectiles;
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -50,6 +51,7 @@ export class GameScene extends Phaser.Scene {
     this.otherPlayers = [];
     existingFarmables = new Set();
     existingDrops = new Set();
+    existingProjectiles = new Set();
     
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
@@ -60,6 +62,7 @@ export class GameScene extends Phaser.Scene {
 
     this.syncFarmables();
     this.syncDrops();
+    this.syncProjectiles();
     
     this.inventory = new Inventory(this);
 
@@ -318,4 +321,26 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    syncProjectiles(){
+        socket.off('projectileCreated');
+
+        socket.on('projectileCreated', (projectileData) => {
+            const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
+            if (!existingDrops.has(id)) {
+                existingProjectiles.add(id);
+
+                // Ajout du projectile au groupe local
+                const projectile = this.projectiles.create(x, y, 'projectileTexture');
+                this.physics.moveTo(projectile, targetX, targetY, speed);
+
+                // Détruire le projectile après un délai s'il ne touche rien
+                this.time.delayedCall(3000, () => {
+                    if (projectile.active) {
+                        projectile.destroy();
+                        existingProjectiles.delete(id)
+                    }
+                });
+            }
+        });
+    }
 }

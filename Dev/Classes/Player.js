@@ -1,4 +1,5 @@
 import HealthBar from "./HealthBar.js";
+import socket from "../Modules/socket.js"
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
 
@@ -203,20 +204,32 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Calculer le centre de la hitbox du joueur
     const { centerX, centerY } = this.getBounds();
 
-    const projectile = this.scene.projectiles.create(centerX, centerY, 'projectileTexture'); // Sprite pour le projectile
+    //const projectile = this.scene.projectiles.create(centerX, centerY, 'projectileTexture'); // Sprite pour le projectile
     
     // Obtenir l'angle d'attaque en fonction de la dernière direction
-    const attackRotation = this.getAttackRotation();
+    const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
 
     // Définir la vitesse de déplacement
     const speed = 150; // pixels par seconde
-
+    
     // Calculer la vitesse en X et Y à partir de l'angle
     const velocityX = Math.cos(attackRotation) * speed;
     const velocityY = Math.sin(attackRotation) * speed;
 
     // Appliquer la vitesse au projectile
-    projectile.setVelocity(velocityX, velocityY);
+    //projectile.setVelocity(velocityX, velocityY);
+
+    // Synchronisation avec le serveur
+    socket.emit('createProjectile', {
+      x: centerX,
+      y: centerY,
+      targetX: mouseX,
+      targetY: mouseY,
+      speed: speed,
+      rotation: attackRotation,
+      ownerId: socket.id,
+      attackDamageEntities: attackDamageEntities
+    });
 
     // Liste des cibles potentielles (désactivé ici, mais peut être activé si besoin)
     /*
@@ -231,14 +244,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         console.log('cible touchée');
       });
     });
-    */
+    
 
     // Détruire le projectile après un délai s'il ne touche rien
     this.scene.time.delayedCall(3000, () => {
       if (projectile.active) {
         projectile.destroy();
       }
-    });
+    });*/
 }
 
 
@@ -274,7 +287,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dy = pointerWorldY - this.y;
 
     // Retourner l'angle entre le joueur et la souris
-    return Math.atan2(dy, dx);
+    return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
 }
 
   
