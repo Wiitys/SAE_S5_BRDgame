@@ -117,7 +117,21 @@ ioServer.on('connection', (socket) => {
     // Création d'un projectile
     socket.on('createProjectile', (projectile) => {
         createProjectile(projectile.x, projectile.y, projectile.targetX, projectile.targetY, projectile.speed, projectile.rotation, projectile.ownerId, projectile.attackDamageEntities)
-        console.log("projectile created")
+    });
+
+    socket.on('projectileHit', (data) => {
+        const { projectileId, targetId, targetType } = data; // `targetType` est soit "player" soit "enemy"
+        // Vérifier si le projectile est encore actif
+        const projectile = projectiles.find(proj => proj.id === projectileId);
+        if (projectile) {
+            if (targetType === 'player') {
+                // Appliquer les dégâts au joueur
+                const targetPlayer = players.find(player => player.id === targetId);
+                if (targetPlayer) {
+                    ioServer.emit('playerHit', { targetId, damage: projectile.attackDamageEntities });
+                }
+            }
+        }
     });
 });
 

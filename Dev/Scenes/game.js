@@ -20,6 +20,8 @@ export class GameScene extends Phaser.Scene {
     this.dropsGroup;
     this.projectiles;
     this.otherPlayers;
+    this.playersGroup;
+    this.otherPlayersGroup;
   }
 	
 	preload() {
@@ -45,10 +47,16 @@ export class GameScene extends Phaser.Scene {
 
     //créer les instances
     this.player = new Player(this, 0, 0);
+    this.player.id = socket.id
     this.cursor = this.input.keyboard.createCursorKeys();
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
     this.otherPlayers = [];
+    this.playersGroup = this.physics.add.group();
+    this.playersGroup.add(this.player);
+
+    this.otherPlayersGroup = this.physics.add.group();
+
     existingFarmables = new Set();
     existingDrops = new Set();
     existingProjectiles = new Set();
@@ -183,6 +191,7 @@ export class GameScene extends Phaser.Scene {
     updateOtherPlayers() {
         // Nettoyage des anciens listeners pour éviter les doublons
         socket.off('updatePlayers');
+        socket.off('playerHit');
     
         // Envoie la position et les HP du joueur actuel au serveur
         socket.emit('updatePlayers', {
@@ -204,10 +213,13 @@ export class GameScene extends Phaser.Scene {
                         const sprite = this.physics.add.image(playerData.x, playerData.y, "player");
                         sprite.setImmovable(true);
                         sprite.body.allowGravity = false;
+                        sprite.id = playerData.id;
     
                         // Ajout de l'instance OtherPlayer
                         otherPlayer = new OtherPlayer(this, sprite, playerData.id);
                         this.otherPlayers.push(otherPlayer);
+                        this.playersGroup.add(sprite);
+                        this.otherPlayersGroup.add(sprite);
                     }
     
                     // Met à jour les données et le sprite du joueur
@@ -223,6 +235,22 @@ export class GameScene extends Phaser.Scene {
                 }
                 return exists;
             });
+        });
+
+        socket.on('playerHit', ({ targetId, damage }) => {
+            console.log("player hit")
+            console.log(damage)
+            if (targetId === socket.id) {
+                
+                // Si c'est le joueur actuel, mettre à jour ses HP
+                this.player.takeDamage(damage)
+                console.log(`Vous avez été touché ! Points de vie restants : ${damage}`);
+        
+                // Vérifier si le joueur est mort
+                if (this.player.playerHP.currentHealth <= 0) {
+                    console.log('Vous êtes mort !');
+                }
+            }
         });
     }
     
@@ -326,12 +354,34 @@ export class GameScene extends Phaser.Scene {
 
         socket.on('projectileCreated', (projectileData) => {
             const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
-            if (!existingDrops.has(id)) {
+            if (!existingProjectiles.has(id)) {
                 existingProjectiles.add(id);
 
                 // Ajout du projectile au groupe local
                 const projectile = this.projectiles.create(x, y, 'projectileTexture');
                 this.physics.moveTo(projectile, targetX, targetY, speed);
+
+                this.playersGroup.getChildren().forEach(player => {
+                    console.log(`playerid = ${player.id} & ownerid = ${ownerId}`)
+                    if (player.id !== ownerId) {
+                        this.physics.add.overlap(projectile, player, (projectile, targetPlayer) => {
+                            if (ownerId === socket.id) {
+                                socket.emit('projectileHit', {
+                                    projectileId: id,
+                                    targetId: targetPlayer.id,
+                                    targetType: 'player',
+                                });
+                            }
+                        
+                            projectile.destroy();
+                            existingProjectiles.delete(id);
+                        });
+                    }
+                });
+
+
+                // Gestion des collisions avec les joueurs
+                
 
                 // Détruire le projectile après un délai s'il ne touche rien
                 this.time.delayedCall(3000, () => {
