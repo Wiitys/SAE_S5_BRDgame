@@ -9,8 +9,6 @@ import Ennemi from "../Classes/Ennemi.js";
 
 import socket from '../Modules/socket.js';
 
-var otherPlayers;
-var otherPlayerSprites;
 var existingFarmables;
 var existingDrops;
 
@@ -183,35 +181,6 @@ export class GameScene extends Phaser.Scene {
             socket.emit('collectDrop', id);
         } else {
             console.log(`drop ${drop.type} non définie.`);
-        }
-    }
-    
-    updateOtherPlayers(){
-        socket.off('updatePlayers');
-
-        socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
-
-        socket.on('updatePlayers', (data) => {
-            if(otherPlayerSprites[0] != undefined){
-                for (const sprite of otherPlayerSprites) {
-                    sprite.destroy(true)
-                    otherPlayerSprites = [];
-                }
-            }
-            otherPlayers = data;
-        })
-        
-        if (otherPlayers != null) {
-            for (let i = 0; i < otherPlayers.length; i++) {
-                if(otherPlayers[i].id != socket.id) {
-                    if (otherPlayers[i].inGame) {
-                        var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
-                        newPlayer.setImmovable(true);
-                        newPlayer.body.allowGravity = false;
-                        otherPlayerSprites.push(newPlayer);
-                    }
-                }
-            }
         }
     }
     
