@@ -4,7 +4,6 @@ export default class HotbarManager {
         this.nbSlots = nbSlots;
         this.selectedSlot = 0;
         this.callbacks = [];
-
     }
 
     // Méthode pour ajouter un écouteur
@@ -17,22 +16,12 @@ export default class HotbarManager {
         this.callbacks.forEach(callback => callback());
     }
 
-    getInventory() {
-        return Object.keys(this.inventory.inventory);   
-    }
-
-    //méthode récupérant les slots utilisés 1 ou non 0
-    getSlots() {
-        return this.inventory.slots;
-    }
-
     getNbSlots() {
         return this.nbSlots;
     }
-    
 
     selectSlot(index) {
-        const slots = this.getSlots(); // Utilise la méthode centralisée pour les slots
+        const slots = this.inventory.getInventoryKey(); // Utilise la méthode centralisée pour les slots
         if (index >= 0 && index < slots.length) {
             this.selectedSlot = index; // Change le slot sélectionné
             this.triggerUpdate();

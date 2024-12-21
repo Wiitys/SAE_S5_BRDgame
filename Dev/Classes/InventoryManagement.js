@@ -177,5 +177,18 @@ export default class Inventory {
     getItemQuantity(key) {
         return this.inventory[key].item?.quantity || 0;
     }
+
+    getInventoryKey() {
+        return Object.keys(this.inventory);   
+    }
+
+    //Méthode récupérant les slots utilisés 1 ou non 0
+    getSlots() {
+        return this.slots;
+    }
+
+    changeSlot(){
+
+    }
     
 }
