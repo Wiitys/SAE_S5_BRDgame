@@ -6,11 +6,12 @@ import Tool from "../Classes/Tool.js";
 import Inventory from "../Classes/Inventory.js";
 import Player from "../Classes/Player.js";
 import Ennemi from "../Classes/Ennemi.js";
-
+import OtherPlayer from "../Classes/OtherPlayer.js"
 import socket from '../Modules/socket.js';
 
 var existingFarmables;
 var existingDrops;
+var existingProjectiles;
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -18,6 +19,10 @@ export class GameScene extends Phaser.Scene {
     this.cursor;
     this.farmableGroup;
     this.dropsGroup;
+    this.projectiles;
+    this.otherPlayers;
+    this.playersGroup;
+    this.otherPlayersGroup;
   }
 	
 	preload() {
@@ -47,21 +52,30 @@ export class GameScene extends Phaser.Scene {
 
     //créer les instances
     this.player = new Player(this, 0, 0);
+    this.player.id = socket.id
     this.cursor = this.input.keyboard.createCursorKeys();
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
-    otherPlayers = [];
-    otherPlayerSprites = [];
+    this.otherPlayers = [];
+    this.playersGroup = this.physics.add.group();
+    this.playersGroup.add(this.player);
+
+    this.otherPlayersGroup = this.physics.add.group();
+
     existingFarmables = new Set();
     existingDrops = new Set();
+    existingProjectiles = new Set();
     
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
     // Initialiser le groupe des drops
     this.dropsGroup = this.physics.add.group();
+    // Initialiser le groupe des projectiles
+    this.projectiles = this.physics.add.group();
 
     this.syncFarmables();
     this.syncDrops();
+    this.syncProjectiles();
     
     this.inventory = new Inventory(this);
 
@@ -184,6 +198,72 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
+    updateOtherPlayers() {
+        // Nettoyage des anciens listeners pour éviter les doublons
+        socket.off('updatePlayers');
+        socket.off('playerHit');
+    
+        // Envoie la position et les HP du joueur actuel au serveur
+        socket.emit('updatePlayers', {
+            x: this.player.x,
+            y: this.player.y,
+            hp: this.player.playerHP.currentHealth
+        });
+    
+        // Écoute des mises à jour des joueurs depuis le serveur
+        socket.on('updatePlayers', (data) => {
+            // Parcourt les données des autres joueurs
+            data.forEach((playerData) => {
+                if (playerData.id !== socket.id) {
+                    // Vérifie si ce joueur existe déjà dans la liste
+                    let otherPlayer = this.otherPlayers.find(p => p.id === playerData.id);
+    
+                    if (!otherPlayer) {
+                        // Création d'un nouveau joueur s'il n'existe pas encore
+                        const sprite = this.physics.add.image(playerData.x, playerData.y, "player");
+                        sprite.setImmovable(true);
+                        sprite.body.allowGravity = false;
+                        sprite.id = playerData.id;
+    
+                        // Ajout de l'instance OtherPlayer
+                        otherPlayer = new OtherPlayer(this, sprite, playerData.id);
+                        this.otherPlayers.push(otherPlayer);
+                        this.playersGroup.add(sprite);
+                        this.otherPlayersGroup.add(sprite);
+                    }
+    
+                    // Met à jour les données et le sprite du joueur
+                    otherPlayer.update(playerData);
+                }
+            });
+    
+            // Supprime les joueurs qui ne sont plus dans la liste reçue
+            this.otherPlayers = this.otherPlayers.filter(otherPlayer => {
+                const exists = data.some(p => p.id === otherPlayer.id);
+                if (!exists) {
+                    otherPlayer.destroy(); // Nettoie le sprite et autres ressources
+                }
+                return exists;
+            });
+        });
+
+        socket.on('playerHit', ({ targetId, damage }) => {
+            console.log("player hit")
+            console.log(damage)
+            if (targetId === socket.id) {
+                
+                // Si c'est le joueur actuel, mettre à jour ses HP
+                this.player.takeDamage(damage)
+                console.log(`Vous avez été touché ! Points de vie restants : ${damage}`);
+        
+                // Vérifier si le joueur est mort
+                if (this.player.playerHP.currentHealth <= 0) {
+                    console.log('Vous êtes mort !');
+                }
+            }
+        });
+    }
+    
     syncFarmables() {
         socket.off('farmableList');
         socket.off('farmableCreated');
@@ -279,4 +359,48 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    syncProjectiles(){
+        socket.off('projectileCreated');
+
+        socket.on('projectileCreated', (projectileData) => {
+            const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
+            if (!existingProjectiles.has(id)) {
+                existingProjectiles.add(id);
+
+                // Ajout du projectile au groupe local
+                const projectile = this.projectiles.create(x, y, 'projectileTexture');
+                this.physics.moveTo(projectile, targetX, targetY, speed);
+
+                this.playersGroup.getChildren().forEach(player => {
+                    console.log(`playerid = ${player.id} & ownerid = ${ownerId}`)
+                    if (player.id !== ownerId) {
+                        this.physics.add.overlap(projectile, player, (projectile, targetPlayer) => {
+                            if (ownerId === socket.id) {
+                                socket.emit('projectileHit', {
+                                    projectileId: id,
+                                    targetId: targetPlayer.id,
+                                    targetType: 'player',
+                                });
+                            }
+                        
+                            projectile.destroy();
+                            existingProjectiles.delete(id);
+                        });
+                    }
+                });
+
+
+                // Gestion des collisions avec les joueurs
+                
+
+                // Détruire le projectile après un délai s'il ne touche rien
+                this.time.delayedCall(3000, () => {
+                    if (projectile.active) {
+                        projectile.destroy();
+                        existingProjectiles.delete(id)
+                    }
+                });
+            }
+        });
+    }
 }

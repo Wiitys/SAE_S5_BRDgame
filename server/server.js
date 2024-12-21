@@ -10,6 +10,8 @@ var farmables = [];
 let farmableCounter = 0;
 var drops = [];
 let dropCounter = 0;
+var projectiles = [];
+let projectileCounter = 0
 
 // Configuration des farmables
 const FARMABLE_TYPES = ["tree", "rock"];
@@ -28,7 +30,8 @@ const ioServer = new socketIO.Server(server, {
         origin: "http://localhost:8000",
         methods: ["GET", "POST"],
         credentials: true //cookies?
-    }
+    },
+    transports: ['polling', 'websocket']
 });
 
 server.listen(3000, () => {
@@ -110,7 +113,31 @@ ioServer.on('connection', (socket) => {
             ioServer.emit('dropCollected', dropId);
         }
     });
+
+    // Création d'un projectile
+    socket.on('createProjectile', (projectile) => {
+        createProjectile(projectile.x, projectile.y, projectile.targetX, projectile.targetY, projectile.speed, projectile.rotation, projectile.ownerId, projectile.attackDamageEntities)
+    });
+
+    socket.on('projectileHit', (data) => {
+        const { projectileId, targetId, targetType } = data; // `targetType` est soit "player" soit "enemy"
+        // Vérifier si le projectile est encore actif
+        const projectile = projectiles.find(proj => proj.id === projectileId);
+        if (projectile) {
+            if (targetType === 'player') {
+                // Appliquer les dégâts au joueur
+                const targetPlayer = players.find(player => player.id === targetId);
+                if (targetPlayer) {
+                    ioServer.emit('playerHit', { targetId, damage: projectile.attackDamageEntities });
+                }
+            }
+        }
+    });
 });
+
+function generateUniqueProjectileId() {
+    return `projectile-${projectileCounter++}`;
+}
 
 function generateUniqueFarmableId() {
     return `farmable-${farmableCounter++}`; // Générer un ID unique basé sur un compteur
@@ -150,4 +177,23 @@ function createDrop(category, type, quantity, x, y) {
     const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, x: x, y: y };
     drops.push(drop);
     ioServer.emit('dropCreated', drop);
+}
+
+function createProjectile(x,y,targetX,targetY,speed,rotation,ownerId,attackDamageEntities) {
+    const projectileData = {
+        id: generateUniqueProjectileId(),
+        x: x,
+        y: y,
+        targetX: targetX,
+        targetY: targetY,
+        speed: speed,
+        rotation: rotation,
+        ownerId: ownerId,
+        attackDamageEntities: attackDamageEntities
+    };
+
+    projectiles.push(projectileData);
+
+    // Diffuser à tous les clients sauf celui qui a émis l'événement
+    ioServer.emit('projectileCreated', projectileData);
 }
