@@ -5,6 +5,7 @@ import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
 import Inventory from "../Classes/Inventory.js";
 import Player from "../Classes/Player.js";
+import Ennemi from "../Classes/Ennemi.js";
 import OtherPlayer from "../Classes/OtherPlayer.js"
 import socket from '../Modules/socket.js';
 
@@ -28,6 +29,10 @@ export class GameScene extends Phaser.Scene {
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
+    //Ennemis
+    this.load.image("ennemi", "/assets/ennemi.png");
+	this.load.image("projectileTexture", "/assets/projectileTexture.png");
+    this.load.image("meleeTexture", "/assets/meleeTexture.png");
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
@@ -83,12 +88,17 @@ export class GameScene extends Phaser.Scene {
 
     this.inventory.createUI();
     this.inventory.updateInventoryText();
+
+    this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
+    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
   }
   
   update() {
     // Gestion des mouvements du joueur
     this.player.update();
     this.updateOtherPlayers();
+    this.ennemiRanged.getClosestTarget(this.player)
+    this.ennemiMelee.getClosestTarget(this.player)
    }
     
     createFarmable(type, x, y, id, hp) {
