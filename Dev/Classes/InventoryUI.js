@@ -2,105 +2,148 @@ export default class InventoryUI {
     constructor(scene, inventory) {
         this.scene = scene;
         this.inventory = inventory;
-        this.inventoryText = null;
-        this.craftButtons = {};
-        this.itemButtons = {};
-        this.craftButton = null;
-        this.craftSelected = null;
         this.visible = false;
+
         this.toggleKey = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
-        this.toggleKey.on('down', () => this.toggleUI()); 
+        this.toggleKey.on('down', () => this.toggleUI());
+
+        this.inventoryContainer = this.scene.add.container(0, 0).setVisible(false).setScrollFactor(0);
 
         this.initUI();
-        this.hideUI();
     }
 
     initUI() {
-        this.inventoryText = this.scene.add.text(
-            this.scene.cameras.main.width * 0.02,
-            this.scene.cameras.main.height * 0.2,
-            '',
-            { fontSize: '16px', fill: '#fff' }
-        ).setOrigin(0, 0).setScrollFactor(0);
 
-        this.createCraftButtons();
+        const camera = this.scene.cameras.main;
+        const screenWidth = camera.width;
+        const screenHeight = camera.height;
 
-        this.createCraftButton();
+        const overlay = this.scene.add.rectangle(
+            screenWidth / 2,
+            screenHeight / 2,
+            screenWidth,
+            screenHeight,
+            0x000000,
+            0.8
+        );
+
+        // Fond d'écran de l'inventaire
+        const bgWidth = screenWidth * 0.8;
+        const bgHeight = screenHeight * 0.8;
+        const bgX = (screenWidth - bgWidth) / 2;
+        const bgY = (screenHeight - bgHeight) / 2;
+
+        const background = this.scene.add.rectangle(
+            bgX + bgWidth / 2,
+            bgY + bgHeight / 2,
+            bgWidth,
+            bgHeight,
+            0x333333,
+        );
+        background.setStrokeStyle(2, 0xffffff);
+
+        this.inventoryContainer.add(background);
+        this.inventoryContainer.add(overlay);
+
+        // Titre de l'inventaire
+        const title = this.scene.add.text(bgX + bgWidth / 2, bgY + 20, 'Inventory', {
+            fontSize: '24px',
+            color: '#ffffff',
+        }).setOrigin(0.5);
+        this.inventoryContainer.add(title);
+
+        // Slots d'inventaire
+        this.inventorySlots = [];
+        const rows = 3;
+        const cols = 5;
+        const slotSize = 64;
+        const padding = 10;
+        const startX = bgX + (bgWidth - (cols * slotSize + (cols - 1) * padding)) / 2;
+        const startY = bgY + 60;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const slotX = startX + col * (slotSize + padding);
+                const slotY = startY + row * (slotSize + padding);
+
+                const slot = this.scene.add.rectangle(slotX, slotY, slotSize, slotSize, 0x444444);
+                slot.setStrokeStyle(2, 0xffffff);
+                slot.setOrigin(0);
+
+                this.inventoryContainer.add(slot);
+                this.inventorySlots.push(slot);
+            }
+        }
+
+        // Mise à jour de l'inventaire
+        this.updateInventoryUI();
     }
 
-    createCraftButtons() {
-        const buttonData = [
-            { label: "Stick", x: 0.25, y: 0.85, key: "stick" },
-            { label: "Plank", x: 0.25, y: 0.95, key: "plank" },
-            { label: "Wooden Axe", x: 0.5, y: 0.85, key: "woodenAxe" },
-            { label: "Wooden Pickaxe", x: 0.5, y: 0.95, key: "woodenPickaxe" },
-            { label: "Stone Axe", x: 0.75, y: 0.85, key: "stoneAxe" },
-            { label: "Stone Pickaxe", x: 0.75, y: 0.95, key: "stonePickaxe" },
-        ];
-
-        buttonData.forEach(({ label, x, y, key }) => {
-            const button = this.scene.add.text(
-                this.scene.cameras.main.width * x,
-                this.scene.cameras.main.height * y,
-                label,
-                { fontSize: '16px', fill: '#fff' }
-            )
-                .setOrigin(0.5, 0.5)
-                .setInteractive()
-                .setScrollFactor(0);
-
-            button.on('pointerdown', () => this.selectCraftItem(key, button));
-            this.craftButtons[key] = button;
-        });
-    }
-
-    createCraftButton() {
-        this.craftButton = this.scene.add.text(
-            this.scene.cameras.main.width / 2,
-            this.scene.cameras.main.height * 0.8,
-            'Craft',
-            { fontSize: '32px', fill: '#fff' }
-        )
-            .setOrigin(0.5, 0.5)
-            .setInteractive()
-            .setScrollFactor(0);
-
-        this.craftButton.on('pointerdown', () => {
-            const crafted = this.inventory.craftSelectedItem(this.craftSelected);
-            if (crafted) {
-                this.updateInventoryText();
+    updateInventoryUI() {
+        const items = Object.values(this.inventory.inventory);
+    
+        this.inventorySlots.forEach((slot, index) => {
+            const item = items.find(i => i.slot === index);
+    
+            if (item) {    
+                if (slot.icon) {
+                    if (slot.icon.texture.key !== item.item.type) {
+                        slot.icon.setTexture(item.item.type);
+                    }
+                } else {
+                    slot.icon = this.scene.add.sprite(slot.x + 32, slot.y + 32, item.item.type).setDisplaySize(32, 32);
+                    this.inventoryContainer.add(slot.icon);
+                }
+    
+                if (slot.text) {
+                    if (parseInt(slot.text.text) !== item.item.quantity) {
+                        slot.text.setText(item.item.quantity);
+                    }
+                } else {
+                    slot.text = this.scene.add.text(slot.x + 48, slot.y + 48, item.item.quantity, {
+                        fontSize: '16px',
+                        color: '#ffffff',
+                    }).setOrigin(0.5);
+                    this.inventoryContainer.add(slot.text);
+                }
+    
             } else {
-                console.log("Impossible de crafter cet objet.");
+                if (slot.icon) {
+                    slot.icon.destroy();
+                    slot.text.destroy();
+                    slot.icon = null;
+                    slot.text = null;
+                }
             }
         });
     }
+    
+    
 
-    updateInventoryText() {
-        this.inventoryText.setText('');
-        Object.keys(this.inventory.inventory).forEach(key => {
-            const quantity = this.inventory.inventory[key].item.quantity;
-            this.inventoryText.appendText(`\n${key}: ${quantity}`);
+    selectItem(key, icon) {
+        // Logique pour la sélection d'un objet (sans craft)
+        console.log(`Item sélectionné : ${key}`);
+
+        // Reset tous les styles
+        this.inventorySlots.forEach(slot => {
+            if (slot.icon) {
+                slot.icon.setTint(0xffffff);
+            }
         });
-    }
 
-    selectCraftItem(key, button) {
-        this.craftSelected = key;
-        Object.values(this.craftButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
-        button.setStyle({ fill: '#ff0' });
+        // Mettre en évidence l'icône sélectionnée
+        icon.setTint(0xffff00);
     }
 
     showUI() {
         this.visible = true;
-        this.craftButton.setVisible(true);
-        this.inventoryText.setVisible(true);
-        Object.values(this.craftButtons).forEach(btn => btn.setVisible(true));
+        this.inventoryContainer.setVisible(true);
+        this.scene.children.bringToTop(this.inventoryContainer);
     }
 
     hideUI() {
         this.visible = false;
-        this.craftButton.setVisible(false);
-        this.inventoryText.setVisible(false);
-        Object.values(this.craftButtons).forEach(btn => btn.setVisible(false));
+        this.inventoryContainer.setVisible(false);
     }
 
     toggleUI() {

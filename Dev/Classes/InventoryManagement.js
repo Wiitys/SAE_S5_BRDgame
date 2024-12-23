@@ -186,9 +186,47 @@ export default class Inventory {
     getSlots() {
         return this.slots;
     }
-
-    changeSlot(){
-
+    
+    changeSlot(fromSlot, toSlot) {
+        // Trouver l'item dans le slot "fromSlot"
+        const fromItemKey = Object.keys(this.inventory).find(key => this.inventory[key].slot === fromSlot);
+        
+        if (!fromItemKey) {
+            console.log(`Le slot ${fromSlot} est vide, impossible de déplacer un item.`);
+            return;
+        }
+    
+        // Trouver l'item dans le slot "toSlot" (s'il existe)
+        const toItemKey = Object.keys(this.inventory).find(key => this.inventory[key].slot === toSlot);
+    
+        if (toItemKey) {
+            // Si le slot de destination est occupé, échanger les slots entre les deux items
+            console.log(`Le slot ${toSlot} est déjà occupé, échange des items.`);
+            
+            // Échanger les slots entre les deux items
+            this.inventory[fromItemKey].slot = toSlot;
+            this.inventory[toItemKey].slot = fromSlot;
+    
+        } else {
+            // Si le slot de destination est libre, déplacer simplement l'item
+            console.log(`Déplacement de l'item du slot ${fromSlot} vers le slot ${toSlot}.`);
+            this.inventory[fromItemKey].slot = toSlot;
+    
+            // Mettre à jour les états des slots
+            this.slots[toSlot] = 1;  // Le slot de destination est occupé
+            this.slots[fromSlot] = 0; // Le slot de départ est libéré
+        }
+    
+        // Déclencher la mise à jour
+        this.triggerUpdate();
+    
+        console.log(`L'élément ${fromItemKey} a été déplacé du slot ${fromSlot} vers le slot ${toSlot}.`);
+        if (toItemKey) {
+            console.log(`L'élément ${toItemKey} a été déplacé du slot ${toSlot} vers le slot ${fromSlot}.`);
+        }
     }
+    
+    
+    
     
 }

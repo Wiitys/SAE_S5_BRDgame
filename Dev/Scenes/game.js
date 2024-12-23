@@ -80,9 +80,14 @@ export class GameScene extends Phaser.Scene {
     console.log(this.inventory.getSlots());
     let oui = this.inventory.getInventoryKey();
     console.log(this.inventory.inventory[oui[1]].slot);
+    this.inventory.changeSlot(0,5)
+    console.log(this.inventory.getSlots());
+    this.inventory.changeSlot(2,3)
 
 
-    this.inventoryUI.updateInventoryText();
+
+
+    this.inventoryUI.updateInventoryUI();
 
 
     this.tools = {
@@ -195,7 +200,7 @@ export class GameScene extends Phaser.Scene {
         if (drop.type) {
             if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
                 this.inventory.addItem(drop.category, drop.type, drop.quantity);
-                this.inventoryUI.updateInventoryText();
+                this.inventoryUI.updateInventoryUI();
                 console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type]?.quantity}`);
                 socket.emit('collectDrop', id);
                 return true;
