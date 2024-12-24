@@ -82,13 +82,6 @@ export class GameScene extends Phaser.Scene {
     console.log(this.inventory.inventory[oui[1]].slot);
     this.inventory.changeSlot(0,5)
     console.log(this.inventory.getSlots());
-    this.inventory.changeSlot(2,3)
-
-
-
-
-    this.inventoryUI.updateInventoryUI();
-
 
     this.tools = {
         stoneAxe: new Tool('stoneAxe', 1),

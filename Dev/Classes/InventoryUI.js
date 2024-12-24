@@ -9,6 +9,11 @@ export default class InventoryUI {
 
         this.inventoryContainer = this.scene.add.container(0, 0).setVisible(false).setScrollFactor(0);
 
+        this.scene.events.on('inventoryUpdate', this.updateInventoryUI, this);
+
+        this.inventory.onInventoryUpdate(() => this.updateInventoryUI());
+
+
         this.initUI();
     }
 
@@ -88,6 +93,7 @@ export default class InventoryUI {
             if (slotClicked) {
                 console.log(`Slot clicked! Row: ${slotClicked.row}, Col: ${slotClicked.col}, Index: ${slotClicked.index}`);
                 this.highlightSlot(slotClicked);
+                this.startDrag(pointer, slotClicked);  // Commence le drag à partir du slot
             } else {
                 console.log(`Clicked outside slots at x=${pointer.x}, y=${pointer.y}`);
             }
@@ -111,7 +117,7 @@ export default class InventoryUI {
 
     highlightSlot(slot) {
         this.inventorySlots.forEach(slotObj => {
-            slotObj.rect.setStrokeStyle(2, 0xffffff);
+            slotObj.rect.setStrokeStyle(2, 0xffffff); 
         });
 
         slot.rect.setStrokeStyle(2, 0xffff00);
@@ -133,6 +139,7 @@ export default class InventoryUI {
                     if (slotObj.icon.texture.key !== item.item.type) {
                         slotObj.icon.setTexture(item.item.type);  // Met à jour l'icône avec le type d'item
                     }
+                    slotObj.icon.setDisplaySize(32, 32);
                 } else {
                     // Si l'icône n'existe pas encore, on la crée
                     slotObj.icon = this.scene.add.sprite(rect.x + rect.width / 2, rect.y + rect.height / 2, item.item.type).setDisplaySize(32, 32);
@@ -164,9 +171,6 @@ export default class InventoryUI {
             }
         });
     }
-    
-    
-    
 
     selectItem(key, icon) {
         // Logique pour la sélection d'un objet (sans craft)
@@ -200,5 +204,44 @@ export default class InventoryUI {
         } else {
             this.showUI();
         }
+    }
+
+    startDrag(pointer, slotClicked) {
+        this.draggingItem = slotClicked;
+        const item = this.inventory.inventory[slotClicked.index];
+        if (item && item.icon) {
+            this.draggedIcon = item.icon;
+        }
+
+        if (this.draggedIcon) {
+            this.draggedIcon.setAlpha(0.7);
+        }
+
+        this.scene.input.on('pointermove', this.updateDrag, this);
+        this.scene.input.on('pointerup', this.dropItem, this);
+    }
+
+    updateDrag(pointer) {
+        if (this.draggedIcon) {
+            this.draggedIcon.x = pointer.x;
+            this.draggedIcon.y = pointer.y;
+        }
+    }
+
+    dropItem(pointer) {
+        const slotClicked = this.getSlotClicked(pointer.x, pointer.y);
+        if (slotClicked) {
+            console.log(`Item dropped! Row: ${slotClicked.row}, Col: ${slotClicked.col}, Index: ${slotClicked.index}`);
+            this.inventory.changeSlot(this.draggingItem.index, slotClicked.index);  // Utilisation de changeSlot pour échanger les items
+        }
+
+        if (this.draggedIcon) {
+            this.draggedIcon.setAlpha(1);
+        }
+
+        this.scene.input.off('pointermove', this.updateDrag, this);
+        this.scene.input.off('pointerup', this.dropItem, this);
+        this.draggedIcon = null;
+        this.draggingItem = null;
     }
 }
