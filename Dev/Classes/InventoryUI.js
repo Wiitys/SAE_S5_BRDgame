@@ -13,11 +13,10 @@ export default class InventoryUI {
     }
 
     initUI() {
-
         const camera = this.scene.cameras.main;
         const screenWidth = camera.width;
         const screenHeight = camera.height;
-
+        
         const overlay = this.scene.add.rectangle(
             screenWidth / 2,
             screenHeight / 2,
@@ -26,13 +25,12 @@ export default class InventoryUI {
             0x000000,
             0.8
         );
-
-        // Fond d'écran de l'inventaire
+        
         const bgWidth = screenWidth * 0.8;
         const bgHeight = screenHeight * 0.8;
         const bgX = (screenWidth - bgWidth) / 2;
         const bgY = (screenHeight - bgHeight) / 2;
-
+        
         const background = this.scene.add.rectangle(
             bgX + bgWidth / 2,
             bgY + bgHeight / 2,
@@ -41,18 +39,16 @@ export default class InventoryUI {
             0x333333,
         );
         background.setStrokeStyle(2, 0xffffff);
-
+        
         this.inventoryContainer.add(background);
         this.inventoryContainer.add(overlay);
-
-        // Titre de l'inventaire
+        
         const title = this.scene.add.text(bgX + bgWidth / 2, bgY + 20, 'Inventory', {
             fontSize: '24px',
             color: '#ffffff',
         }).setOrigin(0.5);
         this.inventoryContainer.add(title);
-
-        // Slots d'inventaire
+        
         this.inventorySlots = [];
         const rows = 3;
         const cols = 5;
@@ -60,63 +56,115 @@ export default class InventoryUI {
         const padding = 10;
         const startX = bgX + (bgWidth - (cols * slotSize + (cols - 1) * padding)) / 2;
         const startY = bgY + 60;
-
+        
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const slotX = startX + col * (slotSize + padding);
                 const slotY = startY + row * (slotSize + padding);
-
+        
                 const slot = this.scene.add.rectangle(slotX, slotY, slotSize, slotSize, 0x444444);
                 slot.setStrokeStyle(2, 0xffffff);
-                slot.setOrigin(0);
-
+                slot.setOrigin(0);  
+        
                 this.inventoryContainer.add(slot);
-                this.inventorySlots.push(slot);
+                this.inventorySlots.push({
+                    rect: slot,
+                    row,
+                    col,
+                    index: row * cols + col, // Ajout d'un index unique pour chaque slot
+                });
             }
         }
-
-        // Mise à jour de l'inventaire
+    
+        // Rendre le conteneur interactif avec ses dimensions statiques
+        this.inventoryContainer.setInteractive(
+            new Phaser.Geom.Rectangle(0, 0, screenWidth, screenHeight),
+            Phaser.Geom.Rectangle.Contains
+        );
+    
+        // Capture les clics sur le conteneur
+        this.inventoryContainer.on('pointerdown', (pointer) => {
+            const slotClicked = this.getSlotClicked(pointer.x, pointer.y);
+            if (slotClicked) {
+                console.log(`Slot clicked! Row: ${slotClicked.row}, Col: ${slotClicked.col}, Index: ${slotClicked.index}`);
+                this.highlightSlot(slotClicked);
+            } else {
+                console.log(`Clicked outside slots at x=${pointer.x}, y=${pointer.y}`);
+            }
+        });
+    
+        // Ajout du conteneur à la scène
+        this.scene.add.existing(this.inventoryContainer);
+        
         this.updateInventoryUI();
     }
+    
+    getSlotClicked(x, y) {
+        // Obtenez les coordonnées locales du clic par rapport au conteneur
+        const localX = x - this.inventoryContainer.x;
+        const localY = y - this.inventoryContainer.y;
+    
+        return this.inventorySlots.find((slot) => 
+            Phaser.Geom.Rectangle.Contains(slot.rect.getBounds(), localX, localY)
+        );
+    }
+
+    highlightSlot(slot) {
+        this.inventorySlots.forEach(slotObj => {
+            slotObj.rect.setStrokeStyle(2, 0xffffff);
+        });
+
+        slot.rect.setStrokeStyle(2, 0xffff00);
+    }     
 
     updateInventoryUI() {
         const items = Object.values(this.inventory.inventory);
     
-        this.inventorySlots.forEach((slot, index) => {
+        // Itérer sur les slots en utilisant la nouvelle structure
+        this.inventorySlots.forEach((slotObj) => {
+            const { rect, row, col, index } = slotObj;
+            
+            // Trouver l'élément associé au slot (utilisation de l'index)
             const item = items.find(i => i.slot === index);
     
-            if (item) {    
-                if (slot.icon) {
-                    if (slot.icon.texture.key !== item.item.type) {
-                        slot.icon.setTexture(item.item.type);
+            if (item) {
+                // Si l'élément est déjà présent dans le slot, on met à jour son icône et sa quantité
+                if (slotObj.icon) {
+                    if (slotObj.icon.texture.key !== item.item.type) {
+                        slotObj.icon.setTexture(item.item.type);  // Met à jour l'icône avec le type d'item
                     }
                 } else {
-                    slot.icon = this.scene.add.sprite(slot.x + 32, slot.y + 32, item.item.type).setDisplaySize(32, 32);
-                    this.inventoryContainer.add(slot.icon);
+                    // Si l'icône n'existe pas encore, on la crée
+                    slotObj.icon = this.scene.add.sprite(rect.x + rect.width / 2, rect.y + rect.height / 2, item.item.type).setDisplaySize(32, 32);
+                    this.inventoryContainer.add(slotObj.icon);
                 }
     
-                if (slot.text) {
-                    if (parseInt(slot.text.text) !== item.item.quantity) {
-                        slot.text.setText(item.item.quantity);
+                if (slotObj.text) {
+                    if (parseInt(slotObj.text.text) !== item.item.quantity) {
+                        slotObj.text.setText(item.item.quantity);  // Met à jour la quantité de l'item
                     }
                 } else {
-                    slot.text = this.scene.add.text(slot.x + 48, slot.y + 48, item.item.quantity, {
+                    // Si le texte n'existe pas encore, on le crée
+                    slotObj.text = this.scene.add.text(rect.x + rect.width*0.8, rect.y + rect.height*0.8, item.item.quantity, {
                         fontSize: '16px',
                         color: '#ffffff',
                     }).setOrigin(0.5);
-                    this.inventoryContainer.add(slot.text);
+                    this.inventoryContainer.add(slotObj.text);
                 }
-    
             } else {
-                if (slot.icon) {
-                    slot.icon.destroy();
-                    slot.text.destroy();
-                    slot.icon = null;
-                    slot.text = null;
+                // Si l'élément n'est pas présent dans le slot, on détruit l'icône et le texte
+                if (slotObj.icon) {
+                    slotObj.icon.destroy();
+                    slotObj.icon = null;
+                }
+                if (slotObj.text) {
+                    slotObj.text.destroy();
+                    slotObj.text = null;
                 }
             }
         });
     }
+    
     
     
 
