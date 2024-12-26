@@ -20,9 +20,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastDirection = "up";
     this.equippedTool = null;
     this.toolSprite = null;
+    this.attackAngle = 0;
+    this.isAttackEnabled = true;
     this.cursor = scene.input.keyboard.createCursorKeys();
+    this.IKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-    this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.scene.input.on("pointerdown", (pointer) => {
+      if (this.isAttackEnabled && pointer.leftButtonDown()) {
+        this.handleAttack();
+      }
+    });
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
@@ -57,6 +64,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Action de réduction de la vie avec la touche "P" pour tester la barre de vie
     scene.input.keyboard.on("keydown-P", () => {
       this.playerHP.removeHealth(10);
+    });
+    this.IKey.on("down", () => {
+      this.isAttackEnabled = !this.isAttackEnabled;
+      console.log("Attack enabled:", this.isAttackEnabled);
     });
   }
 
@@ -122,6 +133,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.updateIdleFrame();
     } else {
       this.playAnimation();
+    }
+  }
+
+  handleAttack() {
+    if (this.equippedTool) {
+      if (!this.equippedTool.isRanged) {
+        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
+      } else {
+        this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage);
+      }
+    } else {
+      this.attackCone();
     }
   }
 
@@ -195,10 +218,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         // Vérifier la distance par rapport au range
         if (distance <= attackRange) {
           const TargetAngle = Math.atan2(dy, dx);
-          const angleDifference = Phaser.Math.Angle.Wrap(TargetAngle - attackRotation);
+          const angleDifference = Math.abs(Phaser.Math.Angle.Wrap(TargetAngle - attackRotation));
 
           // Vérifier si le point est dans l'angle d'attaque
-          return Math.abs(angleDifference) <= attackConeAngle;
+          console.log('Angle cible:', TargetAngle, 'Angle attaque:', attackRotation, 'Différence:', angleDifference);
+ 
+          return Math.abs(angleDifference) <= attackConeAngle / 2;
         }
         return false;
       });
@@ -220,23 +245,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Obtenir l'angle d'attaque en fonction de la dernière direction
     const attackRotation = this.getAttackRotation();
 
-    const direction = new Phaser.Math.Vector2();
-    direction.setToPolar(attackRotation, 1); // Le deuxième paramètre est la longueur (1 pour normalisé)
-
     // Définir la vitesse de déplacement
     const speed = 150; // pixels par seconde
 
-    const pointer = this.scene.input.activePointer; // Récupère la position de la souris
-    const mouseX = pointer.worldX;
-    const mouseY = pointer.worldY;
+    // Calculer la vitesse en X et Y à partir de l'angle
+    const velocityX = Math.cos(attackRotation) * speed;
+    const velocityY = Math.sin(attackRotation) * speed;
 
-    this.scene.physics.moveTo(projectile, mouseX, mouseY, speed);
+    // Appliquer la vitesse au projectile
+    projectile.setVelocity(velocityX, velocityY);
 
-    
-    // Liste des cibles potentielles
+    // Liste des cibles potentielles (désactivé ici, mais peut être activé si besoin)
+    /*
     const players = this.scene.otherPlayerSprites;
-    
-    // Vérifier les collisions dans le cône pour chaque type de cible
     players.forEach(target => {
       this.scene.physics.add.collider(projectile, target, () => {
         // Actions lors de la collision avec la cible
@@ -244,17 +265,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             target.takeDamage(attackDamageEntities); // Inflige des dégâts si la cible a une méthode `takeDamage`
         }
         projectile.destroy(); // Détruit le projectile après avoir touché la cible
-        console.log('cible touchée')
+        console.log('cible touchée');
       });
     });
-    
+    */
+
     // Détruire le projectile après un délai s'il ne touche rien
     this.scene.time.delayedCall(3000, () => {
       if (projectile.active) {
         projectile.destroy();
       }
     });
-  }
+}
+
 
   // Méthode pour afficher la hitbox du cône avec des paramètres passés
   showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle) {
@@ -275,13 +298,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.time.delayedCall(200, () => this.attackConeGraphic.clear(), [], this);
   }
 
-    // Calculer l’angle d’attaque basé sur la dernière direction
   getAttackRotation() {
     const pointer = this.scene.input.activePointer; // Récupère la position de la souris
-    const dx = pointer.worldX - this.x; // Différence en X entre la souris et le joueur
-    const dy = pointer.worldY - this.y; // Différence en Y entre la souris et le joueur
-    return Math.atan2(dy, dx); // Angle entre le joueur et la souris
+    const camera = this.scene.cameras.main; // Récupère la caméra principale
+
+    // Convertir les coordonnées écran de la souris en coordonnées monde ajustées à la caméra
+    const pointerWorldX = camera.scrollX + pointer.x; 
+    const pointerWorldY = camera.scrollY + pointer.y; 
+
+    // Calculer la différence entre le joueur et la souris en coordonnées monde
+    const dx = pointerWorldX - this.x;
+    const dy = pointerWorldY - this.y;
+
+    // Retourner l'angle entre le joueur et la souris
+    return Math.atan2(dy, dx);
   }
+
   
   // Interaction avec les farmables
   interactWithFarmable(farmableGroup) {
@@ -362,17 +394,7 @@ stopHungerManagement() {
   update() {
     this.handleMovement();
 
-    if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool) {
-        if(!this.equippedTool.isRanged) {
-          this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
-        } else {
-          this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage)
-        }
-      } else {
-        this.attackCone();
-      }
-    }
+    this.attackAngle = this.getAttackRotation();
 
     if(this.equippedTool){
       this.toolSprite.setPosition(this.x + 16, this.y);
