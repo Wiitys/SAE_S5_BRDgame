@@ -26,6 +26,21 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
+    
+    const config = {
+      width: 300,
+      height: 15,
+      x: 100,
+      y: 60,
+      background: {
+        color: 0xff0000,
+      },
+      bar: {
+        color: 0xf7bc00,
+      },
+    };
+    this.foodometer = new HealthBar(scene, config, 45, 45);
+    this.startHungerManagement();
 
     // Paramètres d'attaque en cône
     this.attackConeAngle = Phaser.Math.DegToRad(45);
@@ -326,6 +341,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  hungerManagement() {
+    if(this.foodometer.currentHealth > 0) {
+      this.foodometer.removeHealth(1)
+    } else {
+      this.playerHP.removeHealth(4)
+    }
+  }
+
+  startHungerManagement() {
+    this.hungerInterval = setInterval(() => {
+        this.hungerManagement();
+    }, 10000); // 10 000 ms = 10 secondes
+}
+
+stopHungerManagement() {
+    clearInterval(this.hungerInterval); // Arrête l'intervalle
+}
+
   update() {
     this.handleMovement();
 
@@ -350,4 +383,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.scene.scene.start("scene-menu");
     }
   }
+
+
 }
