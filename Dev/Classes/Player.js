@@ -13,8 +13,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
-    this.playerId = socket.id
-    
+    this.id = socket.id
+    console.log(this.id)
     // Paramètres et contrôles du joueur
     this.isPlayer = true;
     this.damageReduction = 0;
@@ -155,7 +155,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const { centerX, centerY } = this.getBounds();
 
     // Obtenir l'angle d'attaque en fonction de la dernière direction
-    const attackRotation = this.getAttackRotation();
+    const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
 
     // Afficher le cône d'attaque
     this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);

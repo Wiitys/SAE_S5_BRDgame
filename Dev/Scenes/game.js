@@ -12,6 +12,7 @@ import socket from '../Modules/socket.js';
 var existingFarmables;
 var existingDrops;
 var existingProjectiles;
+var existingEnemies;
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -22,7 +23,7 @@ export class GameScene extends Phaser.Scene {
     this.projectiles;
     this.otherPlayers;
     this.playersGroup;
-    this.otherPlayersGroup;
+    this.enemiesGroup;
   }
 	
 	preload() {
@@ -52,7 +53,6 @@ export class GameScene extends Phaser.Scene {
 
     //créer les instances
     this.player = new Player(this, 0, 0);
-    this.player.id = socket.id
     this.cursor = this.input.keyboard.createCursorKeys();
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
@@ -60,11 +60,12 @@ export class GameScene extends Phaser.Scene {
     this.playersGroup = this.physics.add.group();
     this.playersGroup.add(this.player);
 
-    this.otherPlayersGroup = this.physics.add.group();
+    this.enemiesGroup = this.physics.add.group();
 
     existingFarmables = new Set();
     existingDrops = new Set();
     existingProjectiles = new Set();
+    existingEnemies = new Set();
     
     // Créer le groupe de farmables
     this.farmableGroup = this.physics.add.group();
@@ -76,6 +77,7 @@ export class GameScene extends Phaser.Scene {
     this.syncFarmables();
     this.syncDrops();
     this.syncProjectiles();
+    this.syncEnemies()
     
     this.inventory = new Inventory(this);
 
@@ -101,10 +103,19 @@ export class GameScene extends Phaser.Scene {
     this.ennemiMelee.getClosestTarget(this.player)
    }
     
+   createEnemy(x, y, type, id) {
+        // Créer une instance farmable
+        const enemy = this.enemiesGroup.create(x, y, type);
+        enemy.setOrigin(0.5, 0.5);
+        enemy.id = id;
+
+        console.log(enemy)
+    }
+
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);
-        farmableElement.setOrigin(0, 0);
+        farmableElement.setOrigin(0.5, 0.5);
         farmableElement.id = id;
         
         switch (type) {
@@ -218,7 +229,7 @@ export class GameScene extends Phaser.Scene {
                     // Vérifie si ce joueur existe déjà dans la liste
                     let otherPlayer = this.otherPlayers.find(p => p.id === playerData.id);
     
-                    if (!otherPlayer) {
+                    if (!otherPlayer && playerData.inGame) {
                         // Création d'un nouveau joueur s'il n'existe pas encore
                         const sprite = this.physics.add.image(playerData.x, playerData.y, "player");
                         sprite.setImmovable(true);
@@ -229,11 +240,13 @@ export class GameScene extends Phaser.Scene {
                         otherPlayer = new OtherPlayer(this, sprite, playerData.id);
                         this.otherPlayers.push(otherPlayer);
                         this.playersGroup.add(sprite);
-                        this.otherPlayersGroup.add(sprite);
+
+                        
                     }
     
-                    // Met à jour les données et le sprite du joueur
-                    otherPlayer.update(playerData);
+                    if(otherPlayer){
+                        otherPlayer.update(playerData);
+                    }
                 }
             });
     
@@ -242,6 +255,7 @@ export class GameScene extends Phaser.Scene {
                 const exists = data.some(p => p.id === otherPlayer.id);
                 if (!exists) {
                     otherPlayer.destroy(); // Nettoie le sprite et autres ressources
+                    //this.playersGroup.remove()
                 }
                 return exists;
             });
@@ -254,7 +268,7 @@ export class GameScene extends Phaser.Scene {
                 
                 // Si c'est le joueur actuel, mettre à jour ses HP
                 this.player.takeDamage(damage)
-                console.log(`Vous avez été touché ! Points de vie restants : ${damage}`);
+                console.log(`Vous avez été touché ! Points de vie restants : ${this.player.playerHP.currentHealth}`);
         
                 // Vérifier si le joueur est mort
                 if (this.player.playerHP.currentHealth <= 0) {
@@ -360,6 +374,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     syncProjectiles(){
+
+        //ajouter les projectiles déjà présent lors de la connection
+
         socket.off('projectileCreated');
 
         socket.on('projectileCreated', (projectileData) => {
@@ -375,7 +392,11 @@ export class GameScene extends Phaser.Scene {
                     console.log(`playerid = ${player.id} & ownerid = ${ownerId}`)
                     if (player.id !== ownerId) {
                         this.physics.add.overlap(projectile, player, (projectile, targetPlayer) => {
-                            if (ownerId === socket.id) {
+                            if (ownerId === socket.id || (targetPlayer.id === socket.id && ownerId.includes('enemy'))) {
+                                console.log(`projectileId: ${id},
+                                    targetId: ${targetPlayer.id},
+                                    targetType: 'player'`)
+
                                 socket.emit('projectileHit', {
                                     projectileId: id,
                                     targetId: targetPlayer.id,
@@ -386,6 +407,25 @@ export class GameScene extends Phaser.Scene {
                             projectile.destroy();
                             existingProjectiles.delete(id);
                         });
+                    }
+                });
+
+                this.enemiesGroup.getChildren().forEach(enemy => {
+                    console.log(`enemyid = ${enemy.id} & ownerid = ${ownerId}`)
+                    if (enemy.id !== ownerId) {
+                        this.physics.add.overlap(projectile, enemy, (projectile, targetEnemy) => {
+                            if (ownerId === socket.id) {
+                                socket.emit('projectileHit', {
+                                    projectileId: id,
+                                    targetId: targetEnemy.id,
+                                    targetType: 'enemy',
+                                });
+                            }
+                            console.log(targetEnemy.hp)
+                            projectile.destroy();
+                            existingProjectiles.delete(id);
+                        });
+                        
                     }
                 });
 
@@ -400,6 +440,63 @@ export class GameScene extends Phaser.Scene {
                         existingProjectiles.delete(id)
                     }
                 });
+            }
+        });
+    }
+
+    syncEnemies(){
+        socket.off('updateEnemies')
+        socket.off('updateEnemyTarget')
+        socket.off('enemyList')
+        socket.off('enemyCreated')
+        socket.emit('requestEnemies');
+
+        socket.on('enemyList', (enemies) => {
+            console.log('Liste des enemis reçue');
+            enemies.forEach(enemy => {
+                console.log('enemi venant de liste reçu ' + enemy.id)
+                if (!existingEnemies.has(enemy.id)) { // Vérifier si la resource existe déjà
+                    this.createEnemy(enemy.x, enemy.y, enemy.type, enemy.id);
+                    existingEnemies.add(enemy.id); // Ajouter l'ID à l'ensemble
+                }
+            });
+        });
+
+        socket.on('enemyCreated', (enemy) => {
+            console.log('enemi créé ' + enemy.id)
+            if (!existingEnemies.has(enemy.id)) { // Vérifier si la resource existe déjà
+                this.createEnemy(enemy.x, enemy.y, enemy.type, enemy.id);
+                existingEnemies.add(enemy.id); // Ajouter l'ID à l'ensemble
+            }
+        })
+
+        socket.on('updateEnemies', (enemies) => {
+            enemies.forEach(enemyInstance => {
+                const enemy = this.enemiesGroup.getChildren().find(e => e.id === enemyInstance.id);
+        
+                if (enemy) {
+                    enemy.x = enemyInstance.x;
+                    enemy.y = enemyInstance.y;
+                    enemy.hp = enemyInstance.hp;
+                    enemy.target = enemyInstance.targetId; // Mise à jour de la cible si nécessaire
+                }
+            })
+        });
+
+        socket.on('updateEnemyTarget', (data) => {
+            const enemy = this.enemiesGroup.getChildren().find(e => e.id === data.id);
+            const target = this.playersGroup.getChildren().find(p => p.id === data.targetId);
+            if (enemy) {
+                enemy.target = target;
+            }
+        });
+
+        socket.on('enemyDied', (id) => {
+            const enemy = this.enemiesGroup.getChildren().find(e => e.id === id);
+            
+            if (enemy) {
+                existingEnemies.delete(enemy.id)
+                enemy.destroy();
             }
         });
     }

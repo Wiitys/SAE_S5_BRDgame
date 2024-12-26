@@ -191,6 +191,7 @@ export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
         this.scene.time.delayedCall(this.actionDelay*3, () => {  // Arrête la fuite après 1 seconde
             this.setVelocity(0);
             this.isFleeing = false;
+            this.isPatrolling = true
         });
     }
 
