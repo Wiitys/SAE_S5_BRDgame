@@ -29,6 +29,9 @@ export default class Inventory {
             woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
             stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
         };
+        this.foods = {
+            meat: { type: 'meat', value: 20},
+        }
         this.itemSelected = null;
         this.callbacks = []; 
     }
@@ -64,6 +67,8 @@ export default class Inventory {
             //console.log(this.inventory[type].item.quantity)
         } else if (category === "Ressource") {
             this.inventory[type] = {item: new Ressource(type, quantity), slot: slot};
+        } else if (category === "Food") {
+            this.inventory[type] = {item: {category: category, type: this.foods[type].type, quantity: quantity, value: this.foods[type].value}, slot: slot};
         } else if (category === "Tool") {
             this.inventory[type] = {item: this.tools[type], slot: slot};
         }

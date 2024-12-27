@@ -18,85 +18,87 @@ var existingFarmables;
 var existingDrops;
 
 export class GameScene extends Phaser.Scene {
-  constructor() {
-    super("scene-game");
-    this.cursor;
-    this.farmableGroup;
-    this.dropsGroup;
-  }
-	
-	preload() {
-    //load les sprites, sons, animations
-    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-
-
-    //farmables
-    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.image("rock", "/assets/rock.png");
-
-    //ressources
-    this.load.image("wood", "/assets/wood.png");
-    this.load.image("stone", "/assets/stone.png");
-    this.load.image("meat", "/assets/meat.png");
-
-    //tools
-    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
-  }
-	
-	create() {
-
-    //créer les instances
-    this.player = new Player(this, 0, 0);
-    this.cursor = this.input.keyboard.createCursorKeys();
-    this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
-
-    otherPlayers = [];
-    otherPlayerSprites = [];
-    existingFarmables = new Set();
-    existingDrops = new Set();
+    constructor() {
+        super("scene-game");
+        this.cursor;
+        this.farmableGroup;
+        this.dropsGroup;
+    }
     
-    // Créer le groupe de farmables
-    this.farmableGroup = this.physics.add.group();
-    // Initialiser le groupe des drops
-    this.dropsGroup = this.physics.add.group();
-
-    this.syncFarmables();
-    this.syncDrops();
+    preload() {
+        //load les sprites, sons, animations
+        this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+        
+        
+        //farmables
+        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.image("rock", "/assets/rock.png");
+        
+        //ressources
+        this.load.image("wood", "/assets/wood.png");
+        this.load.image("stone", "/assets/stone.png");
+        this.load.image("meat", "/assets/meat.png");
+        
+        //tools
+        this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+        this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+    }
     
-    this.inventory = new Inventory(this);
-    this.inventoryUI = new InventoryUI(this, this.inventory);
-    this.hotbarManagement = new HotbarManagement(this.inventory);
-    this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
+    create() {
+        
+        //créer les instances
+        this.player = new Player(this, 0, 0);
+        this.cursor = this.input.keyboard.createCursorKeys();
+        this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
+        
+        otherPlayers = [];
+        otherPlayerSprites = [];
+        existingFarmables = new Set();
+        existingDrops = new Set();
+        
+        // Créer le groupe de farmables
+        this.farmableGroup = this.physics.add.group();
+        // Initialiser le groupe des drops
+        this.dropsGroup = this.physics.add.group();
+        
+        this.syncFarmables();
+        this.syncDrops();
+        
+        this.inventory = new Inventory(this);
+        this.inventoryUI = new InventoryUI(this, this.inventory);
+        this.hotbarManagement = new HotbarManagement(this.inventory);
+        this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
+        
+        
+        // Exemple : Ajouter des ressources pour tester
+        this.inventory.addItem("Ressource", "wood", 10);
+        this.inventory.addItem("Ressource", "stone", 5);
+        
+        this.inventory.addItem("Tool", "stoneAxe", 1);
+        this.inventory.addItem("Tool", "woodenPickaxe", 1);
+        console.log(this.inventory.getInventoryKey());
+        console.log(this.inventory.getSlots());
+        let oui = this.inventory.getInventoryKey();
+        console.log(this.inventory.inventory[oui[1]].slot);
+        this.inventory.changeSlot(0,5)
+        console.log(this.inventory.getSlots());
+        
+        this.tools = {
+            stoneAxe: new Tool('stoneAxe', 1),
+            woodenPickaxe: new Tool('woodenPickaxe', 1),
+        };
+        
+        // Exemple : Équipez un outil
+        this.player.equipTool('stoneAxe');
 
-
-	// Exemple : Ajouter des ressources pour tester
-	this.inventory.addItem("Ressource", "wood", 10);
-	this.inventory.addItem("Ressource", "stone", 5);
-
-    this.inventory.addItem("Tool", "stoneAxe", 1);
-    this.inventory.addItem("Tool", "woodenPickaxe", 1);
-    console.log(this.inventory.getInventoryKey());
-    console.log(this.inventory.getSlots());
-    let oui = this.inventory.getInventoryKey();
-    console.log(this.inventory.inventory[oui[1]].slot);
-    this.inventory.changeSlot(0,5)
-    console.log(this.inventory.getSlots());
-
-    this.tools = {
-        stoneAxe: new Tool('stoneAxe', 1),
-        woodenPickaxe: new Tool('woodenPickaxe', 1),
-    };
-
-    // Exemple : Équipez un outil
-    this.player.equipTool('stoneAxe');
-  }
-  
-  update() {
-    // Gestion des mouvements du joueur
-    this.player.update();
-    this.updateOtherPlayers();
-   }
+        this.createMeat(50,50)
+    }
+    
+    update() {
+        // Gestion des mouvements du joueur
+        this.player.update();
+        this.updateOtherPlayers();
+    }
     
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
@@ -129,7 +131,7 @@ export class GameScene extends Phaser.Scene {
         const farmable = farmableElement.farmableData;
         const category = farmableElement.category;
         const dropType = farmableElement.dropType;
-
+        
         if (farmable) {
             const dropQuantity = Math.min(damage, farmable.currentHp);
             console.log(dropQuantity)
@@ -143,6 +145,21 @@ export class GameScene extends Phaser.Scene {
             socket.emit('hitFarmable', farmableElement.id);
             socket.emit('createDrop', drop);
         }
+    }
+    
+    createMeat(x, y) {
+        const category = 'Food';
+        const dropType = 'meat';
+        
+        const dropQuantity = 1;
+        const drop = {
+            category: category,
+            type: dropType,
+            quantity: dropQuantity,
+            x: x,
+            y: y,
+        };
+        socket.emit('createDrop', drop);
     }
     
     farmableHalfHp(farmableElement, type){
@@ -159,7 +176,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     createDrop(category, type, quantity, x, y, id) {
-
+        
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
             x,
@@ -194,7 +211,7 @@ export class GameScene extends Phaser.Scene {
             if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
                 this.inventory.addItem(drop.category, drop.type, drop.quantity);
                 this.inventoryUI.updateInventoryUI();
-                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type]?.quantity}`);
+                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
                 socket.emit('collectDrop', id);
                 return true;
             } else {
@@ -209,9 +226,9 @@ export class GameScene extends Phaser.Scene {
     
     updateOtherPlayers(){
         socket.off('updatePlayers');
-
+        
         socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
-
+        
         socket.on('updatePlayers', (data) => {
             if(otherPlayerSprites[0] != undefined){
                 for (const sprite of otherPlayerSprites) {
@@ -241,9 +258,9 @@ export class GameScene extends Phaser.Scene {
         socket.off('farmableCreated');
         socket.off('farmableHit');
         socket.off('farmableDestroyed');
-
+        
         socket.emit('requestFarmables');
-
+        
         // Recevoir les farmables existants lors de la connexion
         socket.on('farmableList', (farmables) => {
             console.log('Liste des farmables reçue');
@@ -292,14 +309,14 @@ export class GameScene extends Phaser.Scene {
             console.log(existingFarmables)
         });
     }
-
+    
     syncDrops() {
         socket.off('dropList');
         socket.off('dropCreated');
         socket.off('dropCollected');
-
+        
         socket.emit('requestDrops');
-
+        
         // Recevoir les drops existants lors de la connexion
         socket.on('dropList', (drops) => {
             console.log('Liste des drops reçue');
@@ -311,7 +328,7 @@ export class GameScene extends Phaser.Scene {
                 }
             });
         });
-
+        
         socket.on('dropCreated', (drop) => {
             console.log('Drop créé reçu ' + drop.id);
             if (!existingDrops.has(drop.id)) {
@@ -330,5 +347,5 @@ export class GameScene extends Phaser.Scene {
             }
         });
     }
-
+    
 }

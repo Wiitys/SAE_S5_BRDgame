@@ -285,14 +285,26 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  eatFood() {
+  }
+
   update() {
     this.handleMovement();
 
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool) {
-        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
-      } else {
-        this.attackCone();
+      switch (this.equippedTool.category){
+        case 'Tool':
+          this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
+          break;
+        case 'Food':
+          this.eatFood()
+          break;
+        case 'Ressource':
+          //??
+          break;
+        default:
+          this.attackCone();
+          break;
       }
     }
 
