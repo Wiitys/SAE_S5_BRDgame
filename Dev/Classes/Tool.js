@@ -7,7 +7,6 @@ export default class Tool{
       this.angle = Phaser.Math.DegToRad(angle);
       this.farmableDamage = farmableDamage;
       this.attackDamage = attackDamage;
-      this.isRanged = false;
     }
     
     addTool(quantity) {

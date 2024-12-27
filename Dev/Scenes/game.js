@@ -9,9 +9,11 @@ import HotbarManagement from '../Classes/HotbarManagement.js';
 import HotbarUI from '../Classes/HotbarUI.js';
 
 import Player from "../Classes/Player.js";
-import OtherPlayer from "../Classes/OtherPlayer.js"
+
 import socket from '../Modules/socket.js';
 
+var otherPlayers;
+var otherPlayerSprites;
 var existingFarmables;
 var existingDrops;
 
@@ -21,8 +23,6 @@ export class GameScene extends Phaser.Scene {
         this.cursor;
         this.farmableGroup;
         this.dropsGroup;
-    this.projectiles;
-    this.otherPlayers;
     }
     
     preload() {
@@ -51,16 +51,15 @@ export class GameScene extends Phaser.Scene {
         this.cursor = this.input.keyboard.createCursorKeys();
         this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
         
-        this.otherPlayers = [];
-            existingFarmables = new Set();
+        otherPlayers = [];
+        otherPlayerSprites = [];
+        existingFarmables = new Set();
         existingDrops = new Set();
         
         // Créer le groupe de farmables
         this.farmableGroup = this.physics.add.group();
         // Initialiser le groupe des drops
         this.dropsGroup = this.physics.add.group();
-    // Initialiser le groupe des projectiles
-    this.projectiles = this.physics.add.group();
         
         this.syncFarmables();
         this.syncDrops();
@@ -225,44 +224,33 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
-    updateOtherPlayers() {
-        // Nettoyage des anciens listeners pour éviter les doublons
+    updateOtherPlayers(){
         socket.off('updatePlayers');
         
         socket.emit('updatePlayers', {y: this.player.y, x: this.player.x, hp: this.player.playerHP.currentHealth});
         
         socket.on('updatePlayers', (data) => {
-            // Parcourt les données des autres joueurs
-            data.forEach((playerData) => {
-                if (playerData.id !== socket.id) {
-                    // Vérifie si ce joueur existe déjà dans la liste
-                    let otherPlayer = this.otherPlayers.find(p => p.id === playerData.id);
-    
-                    if (!otherPlayer) {
-                        // Création d'un nouveau joueur s'il n'existe pas encore
-                        const sprite = this.physics.add.image(playerData.x, playerData.y, "player");
-                        sprite.setImmovable(true);
-                        sprite.body.allowGravity = false;
-    
-                        // Ajout de l'instance OtherPlayer
-                        otherPlayer = new OtherPlayer(this, sprite, playerData.id);
-                        this.otherPlayers.push(otherPlayer);
+            if(otherPlayerSprites[0] != undefined){
+                for (const sprite of otherPlayerSprites) {
+                    sprite.destroy(true)
+                    otherPlayerSprites = [];
+                }
+            }
+            otherPlayers = data;
+        })
+        
+        if (otherPlayers != null) {
+            for (let i = 0; i < otherPlayers.length; i++) {
+                if(otherPlayers[i].id != socket.id) {
+                    if (otherPlayers[i].inGame) {
+                        var newPlayer = this.physics.add.image(otherPlayers[i].x, otherPlayers[i].y, "player");
+                        newPlayer.setImmovable(true);
+                        newPlayer.body.allowGravity = false;
+                        otherPlayerSprites.push(newPlayer);
                     }
-    
-                    // Met à jour les données et le sprite du joueur
-                    otherPlayer.update(playerData);
                 }
-            });
-    
-            // Supprime les joueurs qui ne sont plus dans la liste reçue
-            this.otherPlayers = this.otherPlayers.filter(otherPlayer => {
-                const exists = data.some(p => p.id === otherPlayer.id);
-                if (!exists) {
-                    otherPlayer.destroy(); // Nettoie le sprite et autres ressources
-                }
-                return exists;
-            });
-        });
+            }
+        }
     }
     
     syncFarmables() {
