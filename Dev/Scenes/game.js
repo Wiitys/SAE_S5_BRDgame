@@ -7,6 +7,7 @@ import Inventory from "../Classes/InventoryManagement.js";
 import InventoryUI from '../Classes/InventoryUI';
 import HotbarManagement from '../Classes/HotbarManagement.js';
 import HotbarUI from '../Classes/HotbarUI.js';
+import CraftingUI from '../Classes/CraftingUI.js'
 
 import Player from "../Classes/Player.js";
 
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory = new Inventory(this);
         this.inventoryUI = new InventoryUI(this, this.inventory);
+        this.craftingUI = new CraftingUI(this, this.inventory);
         this.hotbarManagement = new HotbarManagement(this.inventory);
         this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
         
