@@ -4,6 +4,8 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const path = require('path');
+const fs = require('fs');
+
 
 var players = [];
 var farmables = [];
@@ -36,6 +38,7 @@ server.listen(3000, () => {
 });
 
 createInitialFarmables()
+loadFarmablesFromMap()
 
 ioServer.on('connection', (socket) => {
     
@@ -131,6 +134,40 @@ function createInitialFarmables() {
     farmables.push({ id: generateUniqueFarmableId(), type: "tree", x: 200, y: 200, hp: 10 });
     farmables.push({ id: generateUniqueFarmableId(), type: "rock", x: 300, y: 300, hp: 10 });
 }
+
+function loadFarmablesFromMap() {
+    // Charger la carte JSON (Tiled exporté)
+    const mapData = JSON.parse(fs.readFileSync('map.json', 'utf8'));
+    console.log('Carte Tiled chargée :', mapData);  // Affichage de la carte complète pour le débogage
+
+    const farmablesFromMap = [];
+
+    // Accéder à la couche des objets (nom de la couche dans Tiled : 'Farmables')
+    const objectLayer = mapData.layers.find(layer => layer.name === 'Farmables');
+    if (objectLayer) {
+        
+        objectLayer.objects.forEach(obj => {
+            const farmableType = obj.properties.find(prop => prop.name === 'type')?.value || 'default';
+
+            const farmable = {
+                id: generateUniqueFarmableId(),
+                type: farmableType,  // Le type est défini dans Tiled (ex : 'tree' ou 'rock')
+                x: obj.x,        // Position X
+                y: obj.y,        // Position Y
+                hp: 10            // HP initial (à ajuster selon ta logique)
+            };
+
+            // Ajouter à la liste des farmables
+            farmablesFromMap.push(farmable);
+       });
+    } else {
+        console.log('La couche "Farmables" est introuvable dans la carte.');
+    }
+
+    // Ajouter les farmables extraits à la liste globale
+    farmables.push(...farmablesFromMap);
+}
+
 
 function destroyFarmable(farmableId, index){
     const farmable = farmables.splice(index, 1)[0];

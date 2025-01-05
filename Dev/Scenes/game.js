@@ -22,6 +22,8 @@ export class GameScene extends Phaser.Scene {
   }
 	
 	preload() {
+    this.load.image('tiles', '/assets/map/Tiles.png');
+    this.load.tilemapTiledJSON('map', '/assets/map/map.json');
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
 
@@ -41,9 +43,18 @@ export class GameScene extends Phaser.Scene {
   }
 	
 	create() {
+    const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
+    
+    const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
+
+    const backgroundLayer = map.createLayer('top', tileset, 0, 0);
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     //créer les instances
-    this.player = new Player(this, 0, 0);
+    this.player = new Player(this, 20, 20);
+
+    this.player.setCollideWorldBounds(true);
+
     this.cursor = this.input.keyboard.createCursorKeys();
     this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
 
