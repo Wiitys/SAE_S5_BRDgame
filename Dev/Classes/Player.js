@@ -12,6 +12,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
+    this.setDepth(1);
     
     // Paramètres et contrôles du joueur
     this.isPlayer = true;

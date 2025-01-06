@@ -191,11 +191,13 @@ export default class InventoryUI {
         this.visible = true;
         this.inventoryContainer.setVisible(true);
         this.scene.children.bringToTop(this.inventoryContainer);
+        this.scene.player.setDepth(0);
     }
 
     hideUI() {
         this.visible = false;
         this.inventoryContainer.setVisible(false);
+        this.scene.player.setDepth(1);
     }
 
     toggleUI() {
