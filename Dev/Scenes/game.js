@@ -77,7 +77,10 @@ export class GameScene extends Phaser.Scene {
     this.inventory.createUI();
     this.inventory.updateInventoryText();
 
-    this.backgroundMusic = this.sound.add('backgroundMusic');
+    this.backgroundMusic = this.sound.add('backgroundMusic', {
+        volume: 0.33, // Ajuster le volume
+        loop: true,  // Activer la boucle
+    });
   }
   
   update() {
