@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
     this.dropsGroup;
     this.projectiles;
     this.otherPlayers;
+    this.backgroundMusicPlaying = false;
   }
 	
 	preload() {
@@ -38,6 +39,9 @@ export class GameScene extends Phaser.Scene {
     //tools
     this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
     this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+
+    // Charger les sons
+    this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
   }
 	
 	create() {
@@ -72,12 +76,19 @@ export class GameScene extends Phaser.Scene {
 
     this.inventory.createUI();
     this.inventory.updateInventoryText();
+
+    this.backgroundMusic = this.sound.add('backgroundMusic');
   }
   
   update() {
     // Gestion des mouvements du joueur
     this.player.update();
     this.updateOtherPlayers();
+
+    if (!this.backgroundMusicPlaying) {
+        this.backgroundMusic.play();
+        this.backgroundMusicPlaying = true; // Empêcher de rejouer
+    }
    }
     
     createFarmable(type, x, y, id, hp) {
