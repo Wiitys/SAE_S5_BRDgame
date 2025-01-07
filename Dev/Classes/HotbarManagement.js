@@ -1,7 +1,7 @@
 export default class HotbarManager {
-    constructor(inventory, nbSlots = 8) {
+    constructor(inventory) {
         this.inventory = inventory;
-        this.nbSlots = nbSlots;
+        this.nbSlots = this.inventory.cols;
         this.selectedSlot = 0;
         this.callbacks = [];
     }
@@ -20,14 +20,42 @@ export default class HotbarManager {
         return this.nbSlots;
     }
 
+    getLastRowSlots() {
+        const slots = this.inventory.getSlots();
+        const totalSlots = slots.length;
+        const lastRowStart = totalSlots - this.nbSlots;
+        return slots.slice(lastRowStart);
+    }
+    
+
+    getLastRowInventoryKeys() {
+        const lastRowSlots = this.getLastRowSlots(); 
+        const totalSlots = this.inventory.getSlots().length; 
+        const lastRowStart = totalSlots - this.nbSlots; 
+    
+        const lastRowKeys = lastRowSlots.map((_, index) => {
+            const globalSlotIndex = lastRowStart + index; 
+            const itemKey = Object.keys(this.inventory.inventory).find(key => 
+                this.inventory.inventory[key].slot === globalSlotIndex
+            );
+            return itemKey || null; 
+        });
+    
+        return lastRowKeys;
+    }
+    
+    
+
     selectSlot(index) {
-        const slots = this.inventory.getInventoryKey(); // Utilise la méthode centralisée pour les slots
+        const slots = this.getLastRowInventoryKeys(); // Utilise la méthode centralisée pour les slots
         if (index >= 0 && index < slots.length) {
             this.selectedSlot = index; // Change le slot sélectionné
             this.triggerUpdate();
             const itemKey = slots[index]; // Récupère la clé de l'item
-            if (itemKey) {
+            if (itemKey && itemKey != null) {
                 this.inventory.equipItem(itemKey); // Équipe l'objet correspondant
+            } else{
+                this.inventory.unequipItem();
             }
         } else {
             console.warn(`Index de slot invalide : ${index}`);
@@ -36,7 +64,7 @@ export default class HotbarManager {
     
 
     getSelectedItem() {
-        const slots = this.getSlots();
+        const slots = this.getActiveInventoryKeys();
         return slots[this.selectedSlot] || null;
     }
 }

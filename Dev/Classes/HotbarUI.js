@@ -84,7 +84,8 @@ export default class Hotbar {
 
     updateHotbar() {
         // Récupère les items de l'inventaire pour les afficher dans la hotbar
-        const items = this.manager.inventory.getInventoryKey(); 
+        const items = this.manager.getLastRowInventoryKeys(); 
+        console.log("updateHotbar",items);
 
         for (let i = 0; i < this.hotbarSlots.length; i++) {
             const { nameText, quantityText, slot } = this.hotbarSlots[i];

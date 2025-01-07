@@ -4,8 +4,11 @@ import Craftable from "./Craftable.js";
 import socket from '../Modules/socket.js';
 
 export default class Inventory {
-    constructor(scene, maxSlots = 10) {
+    constructor(scene, maxSlots = 15, rows = 3, cols = 5) {
         this.scene = scene; // Référence à la scène Phaser
+        this.maxSlots = maxSlots;
+        this.rows = rows;
+        this.cols = cols;
         this.inventory = {};
         this.slots = [];
 
@@ -97,26 +100,6 @@ export default class Inventory {
         return Object.keys(this.inventory).filter(key => this.inventory[key].item instanceof Tool);
     }
 
-
-    selectEquippedItem(key, button) {
-        this.itemSelected = key;
-        Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
-        this.unequipButton.setStyle({fill: '#fff'});
-        button.setStyle({ fill: '#ff0' });
-
-        this.scene.player.equipTool(this.inventory[key].item);
-        console.log(`Outil sélectionné : ${key}`);
-    }
-
-    unequipItem(button) {
-        this.itemSelected = null;
-        Object.values(this.itemButtons).forEach(btn => btn.setStyle({ fill: '#fff' }));
-        button.setStyle({ fill: '#ff0' });
-
-        this.scene.player.unequipTool();
-        console.log(`Outils désélectionnés`);
-    }
-
     getCraftables() {
         return this.craftables;
     }
@@ -177,6 +160,11 @@ export default class Inventory {
     equipItem(key){
         this.scene.player.equipTool(this.inventory[key].item);
         console.log(`Outil sélectionné : ${key}`);
+    }
+    
+    unequipItem() {
+        this.scene.player.unequipTool();
+        console.log(`Outils désélectionnés`);
     }
 
     getItemQuantity(key) {

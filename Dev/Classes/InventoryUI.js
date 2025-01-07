@@ -55,8 +55,8 @@ export default class InventoryUI {
         this.inventoryContainer.add(title);
         
         this.inventorySlots = [];
-        const rows = 3;
-        const cols = 5;
+        const rows = this.inventory.rows;
+        const cols = this.inventory.cols;
         const slotSize = 64;
         const padding = 10;
         const startX = bgX + (bgWidth - (cols * slotSize + (cols - 1) * padding)) / 2;
