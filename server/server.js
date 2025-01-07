@@ -43,7 +43,8 @@ server.listen(3000, () => {
 });
 
 createInitialFarmables()
-createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
+//createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
+createEnemy(0, 0, 'boss','aggressive', undefined, 200, 300)
 
 ioServer.on('connection', (socket) => {
     
@@ -70,7 +71,7 @@ ioServer.on('connection', (socket) => {
 
     socket.on("playerDirectionChanged", (data) => {
         const { id, lastDirection } = data;
-        
+
         // Met à jour la direction du joueur sur le serveur
         if (players[id]) {
             players[id].lastDirection = lastDirection;
@@ -295,20 +296,23 @@ function updateEnemies() {
         
         // Logique d'intelligence ennemie ici (ex: poursuite du joueur)
         if (enemy.target && enemy.target.hp > 0) {
-            switch (enemy.behavior){
-                case 'aggressive':
-                    aggressiveBehavior(enemy);
-                    break;
-                case 'neutral':
-                    neutralBehavior(enemy);
-                    break;
-                case 'passive':
-                    passiveBehavior(enemy);
-                    break;
-                default:
-                    break;
+            if(enemy.type != "boss"){
+                switch (enemy.behavior){
+                    case 'aggressive':
+                        aggressiveBehavior(enemy);
+                        break;
+                    case 'neutral':
+                        neutralBehavior(enemy);
+                        break;
+                    case 'passive':
+                        passiveBehavior(enemy);
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                bossBehavior(enemy)
             }
-            
         }
     }
     ioServer.emit('updateEnemies', enemies); // Synchronise les ennemis avec tous les clients
@@ -355,6 +359,109 @@ setInterval(() => {
         }
     });
 }, 500);
+
+function bossBehavior(enemy){
+    // Calcule la distance entre l'ennemi et le joueur
+
+    let dx = enemy.target.x - enemy.x;
+    let dy = enemy.target.y - enemy.y;
+    const distanceToTarget = Math.sqrt((dx)**2 + (dy)**2);
+
+    const distanceSpawnToPlayer = Math.sqrt((enemy.target.x - enemy.spawnX)**2 + (enemy.target.y - enemy.spawnY)**2);
+    
+    if (distanceSpawnToPlayer > enemy.searchRange && !enemy.isHit) {
+        //console.log(`joueur sorti de la zone de recherche, retour au point d'apparition`)
+        patrol(enemy);
+        
+    // Si l'ennemi est à plus de sa range du joueur, il continue de se déplacer
+    } else if (distanceToTarget >= enemy.maxAttackRange) {
+        enemy.isPatrolling = false;
+        
+        //console.log("joueur trouvé, poursuite lancée")
+        enemy.x += (dx / distanceToTarget) * 1; // Simule un déplacement
+        enemy.y += (dy / distanceToTarget) * 1;
+
+    // Arrête l'ennemi s'il est à moins de sa range du joueur
+    } else if (distanceToTarget < enemy.maxAttackRange) {
+        enemy.isPatrolling = false;
+        if (distanceToTarget < enemy.minAttackRange) {
+            dx = 0;
+            dy = 0;
+        }
+
+        enemy.x += (dx / distanceToTarget) * 1; // Simule un déplacement
+        enemy.y += (dy / distanceToTarget) * 1;
+        
+        if (!enemy.isAttacking) {
+            enemy.isAttacking = true;
+            setTimeout(() => {
+                console.log("Code exécuté après x secondes.");
+                if(enemy.target && enemy.hp > 0 && !enemy.isPatrolling){
+                    console.log('entré dans le if')
+                    if(distanceToTarget <= enemy.minAttackRange){
+                        //combo melee
+                        //shootAround(enemy);
+                        console.log('melee')
+                        //enemy.isAttacking = false
+                    } else if(distanceToTarget <= enemy.AttackRange && distanceToTarget > enemy.minAttackRange) {
+                        //tir laser OU charge
+                        //shootAround(enemy);
+                        console.log('laser')
+                        dx = 0;
+                        dy = 0;
+                        //enemy.isAttacking = false
+                    } else if(distanceToTarget <= enemy.maxAttackRange && distanceToTarget > enemy.attackRange){
+                        //tir circulaire
+                        console.log('shoot')
+                        dx = 0;
+                        dy = 0;
+                        shootAround(enemy);
+                    }
+                }
+            }, enemy.actionDelay);
+        }
+    }
+}
+
+// Lorsque le boss attaque, on crée des projectiles autour de lui
+function shootAround(enemy) {
+    let offset = 0; // Décalage initial des angles
+    let repetitions = 0; // Compteur pour les répétitions de l'attaque
+
+    const shootInterval = setInterval(() => {
+        // Angles pour les projectiles autour du boss
+        const angles = [
+            0 + offset, 
+            Math.PI / 4 + offset, 
+            Math.PI / 2 + offset, 
+            3 * Math.PI / 4 + offset, 
+            Math.PI + offset, 
+            -3 * Math.PI / 4 + offset, 
+            -Math.PI / 2 + offset, 
+            -Math.PI / 4 + offset
+        ];
+
+        // Créer des projectiles pour chaque angle
+        angles.forEach(angle => {
+            const targetX = enemy.x + Math.cos(angle) * 300; // Portée du tir
+            const targetY = enemy.y + Math.sin(angle) * 300;
+            createProjectile(enemy.x, enemy.y, targetX, targetY, 200, 5, enemy.id, 1); // Vitesse 200, dégâts 5
+        });
+
+        // Incrémenter le décalage de 0.25 pour alterner entre zones sûres et dangereuses
+        offset += Math.PI / 8;
+
+        // Incrémenter le compteur de répétitions
+        repetitions++;
+
+        // Arrêter l'attaque après 3 répétitions
+        if (repetitions >= 3) {
+            clearInterval(shootInterval);
+            enemy.isAttacking = false
+        }
+    }, 1000); // Répéter l'attaque toutes les 0.5 secondes
+}
+
 
 function aggressiveBehavior(enemy){
     // Calcule la distance entre l'ennemi et le joueur

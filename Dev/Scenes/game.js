@@ -109,6 +109,10 @@ export class GameScene extends Phaser.Scene {
         enemy.setOrigin(0.5, 0.5);
         enemy.id = id;
         
+        if(type == 'boss'){
+            enemy.setScale(2,2)
+        }
+
         console.log(enemy)
     }
     
