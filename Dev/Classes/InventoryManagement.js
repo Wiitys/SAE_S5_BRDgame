@@ -57,27 +57,54 @@ export default class Inventory {
     }
 
     addItem(category, type, quantity) {
-
-        let slot = this.slots.findIndex(s => s === 0);
-        if (slot === -1) {
-            console.log("Inventaire plein !");
-            return;
-        }
-
         if (this.inventory[type]) {
-            // Augmenter la quantité si l'objet existe déjà
-            this.inventory[type].item.quantity += quantity;
-            //console.log(this.inventory[type].item.quantity)
-        } else if (category === "Ressource") {
-            this.inventory[type] = {item: new Ressource(type, quantity), slot: slot};
-        } else if (category === "Food") {
-            this.inventory[type] = {item: {category: category, type: this.foods[type].type, quantity: quantity, value: this.foods[type].value}, slot: slot};
-        } else if (category === "Tool") {
-            this.inventory[type] = {item: this.tools[type], slot: slot};
+            // Gestion des ressources ou nourritures existantes
+            if (category === "Ressource" || category === "Food") {
+                this.inventory[type].item.quantity += quantity;
+            } else if (category === "Tool") {
+                // Permettre l'ajout d'un outil dans un autre slot
+                let slot = this.slots.findIndex(s => s === 0);
+                if (slot === -1) {
+                    console.log("Inventaire plein, impossible d'ajouter un autre outil.");
+                    return;
+                }
+                // Ajouter l'outil dans un nouveau slot
+                this.inventory[`${type}-${slot}`] = { item: this.tools[type], slot: slot };
+                this.slots[slot] = 1;
+            }
+        } else {
+            // Trouver un slot libre pour les nouveaux objets
+            let slot = this.slots.findIndex(s => s === 0);
+            if (slot === -1) {
+                console.log("Inventaire plein !");
+                return;
+            }
+    
+            // Ajout d'un nouvel item dans un slot libre
+            if (category === "Ressource") {
+                this.inventory[type] = { item: new Ressource(type, quantity), slot: slot };
+            } else if (category === "Food") {
+                this.inventory[type] = {
+                    item: { 
+                        category: category, 
+                        type: this.foods[type].type, 
+                        quantity: quantity, 
+                        value: this.foods[type].value 
+                    }, 
+                    slot: slot 
+                };
+            } else if (category === "Tool") {
+                this.inventory[type] = { item: this.tools[type], slot: slot };
+            }
+    
+            // Marquer le slot comme occupé
+            this.slots[slot] = 1;
         }
-        this.slots[slot] = 1;
+    
+        // Déclencher les mises à jour
         this.triggerUpdate();
     }
+    
 
     removeItem(type, quantity) {
         if (this.inventory[type] && this.inventory[type].item.quantity >= quantity) {

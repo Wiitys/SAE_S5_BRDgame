@@ -125,6 +125,7 @@ export default class InventoryUI {
 
     updateInventoryUI() {
         const items = Object.values(this.inventory.inventory);
+        console.log("Slots Update",this.inventory.getSlots())
     
         // Itérer sur les slots en utilisant la nouvelle structure
         this.inventorySlots.forEach((slotObj) => {
