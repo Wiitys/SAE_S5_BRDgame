@@ -15,103 +15,103 @@ var existingProjectiles;
 var existingEnemies;
 
 export class GameScene extends Phaser.Scene {
-  constructor() {
-    super("scene-game");
-    this.cursor;
-    this.farmableGroup;
-    this.dropsGroup;
-    this.projectiles;
-    this.otherPlayers;
-    this.playersGroup;
-    this.enemiesGroup;
-  }
-	
-	preload() {
-    //load les sprites, sons, animations
-    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-
-    //Ennemis
-    this.load.image("ennemi", "/assets/ennemi.png");
-	this.load.image("projectileTexture", "/assets/projectileTexture.png");
-    this.load.image("meleeTexture", "/assets/meleeTexture.png");
-
-    //farmables
-    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.image("rock", "/assets/rock.png");
-
-    //ressources
-    this.load.image("wood", "/assets/wood.png");
-    this.load.image("stone", "/assets/stone.png");
-    this.load.image("meat", "/assets/meat.png");
-
-    //tools
-    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
-  }
-	
-	create() {
-
-    //créer les instances
-    this.player = new Player(this, 0, 0);
-    this.cursor = this.input.keyboard.createCursorKeys();
-    this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
-
-    this.otherPlayers = [];
-    this.playersGroup = this.physics.add.group();
-    this.playersGroup.add(this.player);
-
-    this.enemiesGroup = this.physics.add.group();
-
-    existingFarmables = new Set();
-    existingDrops = new Set();
-    existingProjectiles = new Set();
-    existingEnemies = new Set();
+    constructor() {
+        super("scene-game");
+        this.cursor;
+        this.farmableGroup;
+        this.dropsGroup;
+        this.projectiles;
+        this.otherPlayers;
+        this.playersGroup;
+        this.enemiesGroup;
+    }
     
-    // Créer le groupe de farmables
-    this.farmableGroup = this.physics.add.group();
-    // Initialiser le groupe des drops
-    this.dropsGroup = this.physics.add.group();
-    // Initialiser le groupe des projectiles
-    this.projectiles = this.physics.add.group();
-
-    this.syncFarmables();
-    this.syncDrops();
-    this.syncProjectiles();
-    this.syncEnemies()
+    preload() {
+        //load les sprites, sons, animations
+        this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+        
+        //Ennemis
+        this.load.image("ennemi", "/assets/ennemi.png");
+        this.load.image("projectileTexture", "/assets/projectileTexture.png");
+        this.load.image("meleeTexture", "/assets/meleeTexture.png");
+        
+        //farmables
+        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.image("rock", "/assets/rock.png");
+        
+        //ressources
+        this.load.image("wood", "/assets/wood.png");
+        this.load.image("stone", "/assets/stone.png");
+        this.load.image("meat", "/assets/meat.png");
+        
+        //tools
+        this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+        this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+    }
     
-    this.inventory = new Inventory(this);
-
-	// Exemple : Ajouter des ressources pour tester
-	this.inventory.addItem("Ressource", "wood", 10);
-	this.inventory.addItem("Ressource", "stone", 5);
-
-    this.inventory.addItem("Tool", "stoneAxe", 1);
-    this.inventory.addItem("Tool", "woodenPickaxe", 1);
-
-    this.inventory.createUI();
-    this.inventory.updateInventoryText();
-
-    this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
-    this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
-  }
-  
-  update() {
-    // Gestion des mouvements du joueur
-    this.player.update();
-    this.updateOtherPlayers();
-    this.ennemiRanged.getClosestTarget(this.player)
-    this.ennemiMelee.getClosestTarget(this.player)
-   }
+    create() {
+        
+        //créer les instances
+        this.player = new Player(this, 0, 0);
+        this.cursor = this.input.keyboard.createCursorKeys();
+        this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
+        
+        this.otherPlayers = [];
+        this.playersGroup = this.physics.add.group();
+        this.playersGroup.add(this.player);
+        
+        this.enemiesGroup = this.physics.add.group();
+        
+        existingFarmables = new Set();
+        existingDrops = new Set();
+        existingProjectiles = new Set();
+        existingEnemies = new Set();
+        
+        // Créer le groupe de farmables
+        this.farmableGroup = this.physics.add.group();
+        // Initialiser le groupe des drops
+        this.dropsGroup = this.physics.add.group();
+        // Initialiser le groupe des projectiles
+        this.projectiles = this.physics.add.group();
+        
+        this.syncFarmables();
+        this.syncDrops();
+        this.syncProjectiles();
+        this.syncEnemies()
+        
+        this.inventory = new Inventory(this);
+        
+        // Exemple : Ajouter des ressources pour tester
+        this.inventory.addItem("Ressource", "wood", 10);
+        this.inventory.addItem("Ressource", "stone", 5);
+        
+        this.inventory.addItem("Tool", "stoneAxe", 1);
+        this.inventory.addItem("Tool", "woodenPickaxe", 1);
+        
+        this.inventory.createUI();
+        this.inventory.updateInventoryText();
+        
+        this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
+        this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
+    }
     
-   createEnemy(x, y, type, id) {
+    update() {
+        // Gestion des mouvements du joueur
+        this.player.update();
+        this.updateOtherPlayers();
+        this.ennemiRanged.getClosestTarget(this.player)
+        this.ennemiMelee.getClosestTarget(this.player)
+    }
+    
+    createEnemy(x, y, type, id) {
         // Créer une instance farmable
         const enemy = this.enemiesGroup.create(x, y, type);
         enemy.setOrigin(0.5, 0.5);
         enemy.id = id;
-
+        
         console.log(enemy)
     }
-
+    
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);
@@ -143,7 +143,7 @@ export class GameScene extends Phaser.Scene {
         const farmable = farmableElement.farmableData;
         const category = farmableElement.category;
         const dropType = farmableElement.dropType;
-
+        
         if (farmable) {
             const dropQuantity = Math.min(damage, farmable.currentHp);
             console.log(dropQuantity)
@@ -173,7 +173,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     createDrop(category, type, quantity, x, y, id) {
-
+        
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
             x,
@@ -213,14 +213,15 @@ export class GameScene extends Phaser.Scene {
         // Nettoyage des anciens listeners pour éviter les doublons
         socket.off('updatePlayers');
         socket.off('playerHit');
-    
+        socket.off("updatePlayerDirection")
+        
         // Envoie la position et les HP du joueur actuel au serveur
         socket.emit('updatePlayers', {
             x: this.player.x,
             y: this.player.y,
             hp: this.player.playerHP.currentHealth
         });
-    
+        
         // Écoute des mises à jour des joueurs depuis le serveur
         socket.on('updatePlayers', (data) => {
             // Parcourt les données des autres joueurs
@@ -228,39 +229,78 @@ export class GameScene extends Phaser.Scene {
                 if (playerData.id !== socket.id) {
                     // Vérifie si ce joueur existe déjà dans la liste
                     let otherPlayer = this.otherPlayers.find(p => p.id === playerData.id);
-    
-                    if (!otherPlayer && playerData.inGame) {
-                        // Création d'un nouveau joueur s'il n'existe pas encore
-                        const sprite = this.physics.add.image(playerData.x, playerData.y, "player");
-                        sprite.setImmovable(true);
-                        sprite.body.allowGravity = false;
-                        sprite.id = playerData.id;
-    
-                        // Ajout de l'instance OtherPlayer
-                        otherPlayer = new OtherPlayer(this, sprite, playerData.id);
+                    
+                    // Recherche si un sprite avec cet ID existe déjà
+                    let existingSprite = this.playersGroup.getChildren().find(p => p.id === playerData.id);
+                    
+                    if (!existingSprite && playerData.inGame) {
+                        // Si aucun sprite n'existe, on en crée un nouveau
+                        const playerSprite = this.playersGroup.create(playerData.x, playerData.y, 'player');
+                        playerSprite.body.allowGravity = false;
+                        playerSprite.id = playerData.id;
+                        
+                        otherPlayer = new OtherPlayer(this, playerData.id);
                         this.otherPlayers.push(otherPlayer);
-                        this.playersGroup.add(sprite);
-
+                        
+                        console.log(`Ajout d'un nouveau sprite avec id ${playerData.id}`);
+                    } else if (existingSprite) {
+                        // Si le sprite existe déjà, on met juste à jour ses coordonnées
+                        
+                        if(playerData.x == existingSprite.x && playerData.y == existingSprite.y){
+                            existingSprite.anims.pause();
+                            const frames = {
+                                "right": 3,
+                                "left": 3,
+                                "down": 0,
+                                "up": 6
+                            };
+                            existingSprite.setFrame(frames[otherPlayer.lastDirection]);
+                        } else {
+                            existingSprite.anims.resume();
+                            switch (otherPlayer.lastDirection) {
+                                case "up":
+                                existingSprite.flipX = false;
+                                existingSprite.play("up", true);
+                                break;
+                                case "down":
+                                existingSprite.flipX = false;
+                                existingSprite.play("down", true);
+                                break;
+                                case "left":
+                                existingSprite.flipX = true;
+                                existingSprite.play("side", true);
+                                break;
+                                case "right":
+                                existingSprite.flipX = false;
+                                existingSprite.play("side", true);
+                                break;
+                            }
+                        }
+                        
+                        existingSprite.x = playerData.x;
+                        existingSprite.y = playerData.y;
+                        
                         
                     }
-    
-                    if(otherPlayer){
-                        otherPlayer.update(playerData);
-                    }
                 }
             });
-    
+            
+            
+            
             // Supprime les joueurs qui ne sont plus dans la liste reçue
-            this.otherPlayers = this.otherPlayers.filter(otherPlayer => {
+            for (let i = this.otherPlayers.length - 1; i >= 0; i--) { // Parcours inversé pour éviter les décalages
+                const otherPlayer = this.otherPlayers[i];
+                const playerSprite = this.playersGroup.getChildren().find(p => p.id === otherPlayer.id)
                 const exists = data.some(p => p.id === otherPlayer.id);
                 if (!exists) {
-                    otherPlayer.destroy(); // Nettoie le sprite et autres ressources
-                    //this.playersGroup.remove()
+                    
+                    // Retire l'élément du tableau
+                    this.otherPlayers.splice(i, 1);
+                    this.playersGroup.remove(playerSprite)
                 }
-                return exists;
-            });
+            }
         });
-
+        
         socket.on('playerHit', ({ targetId, damage }) => {
             console.log("player hit")
             console.log(damage)
@@ -269,13 +309,30 @@ export class GameScene extends Phaser.Scene {
                 // Si c'est le joueur actuel, mettre à jour ses HP
                 this.player.takeDamage(damage)
                 console.log(`Vous avez été touché ! Points de vie restants : ${this.player.playerHP.currentHealth}`);
-        
+                
                 // Vérifier si le joueur est mort
                 if (this.player.playerHP.currentHealth <= 0) {
                     console.log('Vous êtes mort !');
                 }
             }
         });
+        
+        
+        // Gère les directions des autres joueurs
+        socket.on("updatePlayerDirection", (data) => {
+            const { id, lastDirection } = data;
+            
+            // Récupère le joueur correspondant dans la liste des joueurs
+            const otherPlayer = this.otherPlayers.find(p => p.id === id);
+            
+            if (otherPlayer) {
+                // Met à jour la direction
+                otherPlayer.lastDirection = lastDirection;
+            }
+            
+            
+        });
+        
     }
     
     syncFarmables() {
@@ -283,9 +340,9 @@ export class GameScene extends Phaser.Scene {
         socket.off('farmableCreated');
         socket.off('farmableHit');
         socket.off('farmableDestroyed');
-
+        
         socket.emit('requestFarmables');
-
+        
         // Recevoir les farmables existants lors de la connexion
         socket.on('farmableList', (farmables) => {
             console.log('Liste des farmables reçue');
@@ -334,14 +391,14 @@ export class GameScene extends Phaser.Scene {
             console.log(existingFarmables)
         });
     }
-
+    
     syncDrops() {
         socket.off('dropList');
         socket.off('dropCreated');
         socket.off('dropCollected');
-
+        
         socket.emit('requestDrops');
-
+        
         // Recevoir les drops existants lors de la connexion
         socket.on('dropList', (drops) => {
             console.log('Liste des drops reçue');
@@ -353,7 +410,7 @@ export class GameScene extends Phaser.Scene {
                 }
             });
         });
-
+        
         socket.on('dropCreated', (drop) => {
             console.log('Drop créé reçu ' + drop.id);
             if (!existingDrops.has(drop.id)) {
@@ -372,22 +429,22 @@ export class GameScene extends Phaser.Scene {
             }
         });
     }
-
+    
     syncProjectiles(){
-
+        
         //ajouter les projectiles déjà présent lors de la connection
-
+        
         socket.off('projectileCreated');
-
+        
         socket.on('projectileCreated', (projectileData) => {
             const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
             if (!existingProjectiles.has(id)) {
                 existingProjectiles.add(id);
-
+                
                 // Ajout du projectile au groupe local
                 const projectile = this.projectiles.create(x, y, 'projectileTexture');
                 this.physics.moveTo(projectile, targetX, targetY, speed);
-
+                
                 this.playersGroup.getChildren().forEach(player => {
                     console.log(`playerid = ${player.id} & ownerid = ${ownerId}`)
                     if (player.id !== ownerId) {
@@ -396,108 +453,109 @@ export class GameScene extends Phaser.Scene {
                                 console.log(`projectileId: ${id},
                                     targetId: ${targetPlayer.id},
                                     targetType: 'player'`)
-
-                                socket.emit('projectileHit', {
-                                    projectileId: id,
-                                    targetId: targetPlayer.id,
-                                    targetType: 'player',
-                                });
-                            }
-                        
+                                    
+                                    socket.emit('projectileHit', {
+                                        projectileId: id,
+                                        targetId: targetPlayer.id,
+                                        targetType: 'player',
+                                    });
+                                }
+                                
+                                projectile.destroy();
+                                existingProjectiles.delete(id);
+                            });
+                        }
+                    });
+                    
+                    this.enemiesGroup.getChildren().forEach(enemy => {
+                        console.log(`enemyid = ${enemy.id} & ownerid = ${ownerId}`)
+                        if (enemy.id !== ownerId) {
+                            this.physics.add.overlap(projectile, enemy, (projectile, targetEnemy) => {
+                                if (ownerId === socket.id) {
+                                    socket.emit('projectileHit', {
+                                        projectileId: id,
+                                        targetId: targetEnemy.id,
+                                        targetType: 'enemy',
+                                    });
+                                }
+                                console.log(targetEnemy.hp)
+                                projectile.destroy();
+                                existingProjectiles.delete(id);
+                            });
+                            
+                        }
+                    });
+                    
+                    
+                    // Gestion des collisions avec les joueurs
+                    
+                    
+                    // Détruire le projectile après un délai s'il ne touche rien
+                    this.time.delayedCall(3000, () => {
+                        if (projectile.active) {
                             projectile.destroy();
-                            existingProjectiles.delete(id);
-                        });
+                            existingProjectiles.delete(id)
+                        }
+                    });
+                }
+            });
+        }
+        
+        syncEnemies(){
+            socket.off('updateEnemies')
+            socket.off('updateEnemyTarget')
+            socket.off('enemyList')
+            socket.off('enemyCreated')
+            socket.emit('requestEnemies');
+            
+            socket.on('enemyList', (enemies) => {
+                console.log('Liste des enemis reçue');
+                enemies.forEach(enemy => {
+                    console.log('enemi venant de liste reçu ' + enemy.id)
+                    if (!existingEnemies.has(enemy.id)) { // Vérifier si la resource existe déjà
+                        this.createEnemy(enemy.x, enemy.y, enemy.type, enemy.id);
+                        existingEnemies.add(enemy.id); // Ajouter l'ID à l'ensemble
                     }
                 });
-
-                this.enemiesGroup.getChildren().forEach(enemy => {
-                    console.log(`enemyid = ${enemy.id} & ownerid = ${ownerId}`)
-                    if (enemy.id !== ownerId) {
-                        this.physics.add.overlap(projectile, enemy, (projectile, targetEnemy) => {
-                            if (ownerId === socket.id) {
-                                socket.emit('projectileHit', {
-                                    projectileId: id,
-                                    targetId: targetEnemy.id,
-                                    targetType: 'enemy',
-                                });
-                            }
-                            console.log(targetEnemy.hp)
-                            projectile.destroy();
-                            existingProjectiles.delete(id);
-                        });
-                        
-                    }
-                });
-
-
-                // Gestion des collisions avec les joueurs
-                
-
-                // Détruire le projectile après un délai s'il ne touche rien
-                this.time.delayedCall(3000, () => {
-                    if (projectile.active) {
-                        projectile.destroy();
-                        existingProjectiles.delete(id)
-                    }
-                });
-            }
-        });
-    }
-
-    syncEnemies(){
-        socket.off('updateEnemies')
-        socket.off('updateEnemyTarget')
-        socket.off('enemyList')
-        socket.off('enemyCreated')
-        socket.emit('requestEnemies');
-
-        socket.on('enemyList', (enemies) => {
-            console.log('Liste des enemis reçue');
-            enemies.forEach(enemy => {
-                console.log('enemi venant de liste reçu ' + enemy.id)
+            });
+            
+            socket.on('enemyCreated', (enemy) => {
+                console.log('enemi créé ' + enemy.id)
                 if (!existingEnemies.has(enemy.id)) { // Vérifier si la resource existe déjà
                     this.createEnemy(enemy.x, enemy.y, enemy.type, enemy.id);
                     existingEnemies.add(enemy.id); // Ajouter l'ID à l'ensemble
                 }
-            });
-        });
-
-        socket.on('enemyCreated', (enemy) => {
-            console.log('enemi créé ' + enemy.id)
-            if (!existingEnemies.has(enemy.id)) { // Vérifier si la resource existe déjà
-                this.createEnemy(enemy.x, enemy.y, enemy.type, enemy.id);
-                existingEnemies.add(enemy.id); // Ajouter l'ID à l'ensemble
-            }
-        })
-
-        socket.on('updateEnemies', (enemies) => {
-            enemies.forEach(enemyInstance => {
-                const enemy = this.enemiesGroup.getChildren().find(e => e.id === enemyInstance.id);
-        
-                if (enemy) {
-                    enemy.x = enemyInstance.x;
-                    enemy.y = enemyInstance.y;
-                    enemy.hp = enemyInstance.hp;
-                    enemy.target = enemyInstance.targetId; // Mise à jour de la cible si nécessaire
-                }
             })
-        });
-
-        socket.on('updateEnemyTarget', (data) => {
-            const enemy = this.enemiesGroup.getChildren().find(e => e.id === data.id);
-            const target = this.playersGroup.getChildren().find(p => p.id === data.targetId);
-            if (enemy) {
-                enemy.target = target;
-            }
-        });
-
-        socket.on('enemyDied', (id) => {
-            const enemy = this.enemiesGroup.getChildren().find(e => e.id === id);
             
-            if (enemy) {
-                existingEnemies.delete(enemy.id)
-                enemy.destroy();
-            }
-        });
+            socket.on('updateEnemies', (enemies) => {
+                enemies.forEach(enemyInstance => {
+                    const enemy = this.enemiesGroup.getChildren().find(e => e.id === enemyInstance.id);
+                    
+                    if (enemy) {
+                        enemy.x = enemyInstance.x;
+                        enemy.y = enemyInstance.y;
+                        enemy.hp = enemyInstance.hp;
+                        enemy.target = enemyInstance.targetId; // Mise à jour de la cible si nécessaire
+                    }
+                })
+            });
+            
+            socket.on('updateEnemyTarget', (data) => {
+                const enemy = this.enemiesGroup.getChildren().find(e => e.id === data.id);
+                const target = this.playersGroup.getChildren().find(p => p.id === data.targetId);
+                if (enemy) {
+                    enemy.target = target;
+                }
+            });
+            
+            socket.on('enemyDied', (id) => {
+                const enemy = this.enemiesGroup.getChildren().find(e => e.id === id);
+                
+                if (enemy) {
+                    existingEnemies.delete(enemy.id)
+                    enemy.destroy();
+                }
+            });
+        }
     }
-}
+    

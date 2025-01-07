@@ -84,17 +84,21 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (left.isDown && !right.isDown) {
       velocityX = -this.playerSpeed;
       this.lastDirection = "left";
+      this.updateServerDirection();
     } else if (right.isDown && !left.isDown) {
       velocityX = this.playerSpeed;
       this.lastDirection = "right";
+      this.updateServerDirection();
     }
 
     if (up.isDown && !down.isDown) {
       velocityY = -this.playerSpeed;
       this.lastDirection = "up";
+      this.updateServerDirection();
     } else if (down.isDown && !up.isDown) {
       velocityY = this.playerSpeed;
       this.lastDirection = "down";
+      this.updateServerDirection();
     }
 
     if (velocityX !== 0 && velocityY !== 0) {
@@ -111,6 +115,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.playAnimation();
     }
+  }
+
+  // Méthode pour informer le serveur
+  updateServerDirection() {
+    socket.emit("playerDirectionChanged", {
+        id: this.id, // Identifiant du joueur
+        lastDirection: this.lastDirection,
+    });
   }
 
   playAnimation() {

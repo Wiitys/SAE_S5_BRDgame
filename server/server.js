@@ -47,7 +47,7 @@ createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
 
 ioServer.on('connection', (socket) => {
     
-    players.push({ x: 0, y: 0, id: socket.id, inGame: false, hp: 0});
+    players.push({ x: 0, y: 0, id: socket.id, inGame: false, hp: 0, lastDirection: "down"});
     
     console.log(`A player connected: ${socket.id}`);
     
@@ -67,6 +67,18 @@ ioServer.on('connection', (socket) => {
         }
         socket.emit('updatePlayers', players);
     })
+
+    socket.on("playerDirectionChanged", (data) => {
+        const { id, lastDirection } = data;
+        
+        // Met à jour la direction du joueur sur le serveur
+        if (players[id]) {
+            players[id].lastDirection = lastDirection;
+        }
+
+        // Diffuse aux autres joueurs
+        socket.broadcast.emit("updatePlayerDirection", { id, lastDirection });
+    });
     
     socket.on('disconnect', function() {
         var count = 0;
