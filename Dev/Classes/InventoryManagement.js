@@ -21,16 +21,23 @@ export default class Inventory {
         this.craftables = {
             stick: new Craftable("Ressource", "stick", 2, { wood: 1 }),
             plank: new Craftable("Ressource", "plank", 4, { wood: 2 }),
+            ironIngot: new Craftable("Ressource", "ironIngot", 1, { moltenIron: 2 }),
             woodenAxe: new Craftable("Tool", "woodenAxe", 1, { plank: 3, stick: 2 }),
             woodenPickaxe: new Craftable("Tool", "woodenPickaxe", 1, { plank: 3, stick: 2 }),
             stoneAxe: new Craftable("Tool", "stoneAxe", 1, { stone: 3, stick: 2 }),
             stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, { stone: 3, stick: 2 }),
+            ironSword: new Craftable("Tool", "ironSword", 1, { ironIngot: 2, stick: 2}),
+            ironAxe: new Craftable("Tool", "ironAxe", 1, { ironIngot: 3, stick: 2}),
+            ironPickaxe: new Craftable("Tool", "ironPickaxe", 1, { ironIngot: 3, stick: 2}),
         };
         this.tools = {
             woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 20, 3, 2),
             stonePickaxe: new Tool('stonePickaxe', 1, 45, 90, 4, 3),
             woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
             stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
+            ironSword: new Tool('ironSword', 1, 90, 70, 0, 10),
+            ironAxe: new Tool('ironAxe', 1, 70, 90, 8, 5),
+            ironPickaxe: new Tool('stonePickaxe', 1, 45, 90, 8, 5)
         };
         this.foods = {
             meat: { type: 'meat', value: 20},
