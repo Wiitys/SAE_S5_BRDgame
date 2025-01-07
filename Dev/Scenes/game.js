@@ -112,7 +112,7 @@ export class GameScene extends Phaser.Scene {
         if(type == 'boss'){
             enemy.setScale(2,2)
         }
-
+        
         console.log(enemy)
     }
     
@@ -439,6 +439,8 @@ export class GameScene extends Phaser.Scene {
         //ajouter les projectiles déjà présent lors de la connection
         
         socket.off('projectileCreated');
+        socket.off("rayWarning")
+        socket.off("rayAttack")
         
         socket.on('projectileCreated', (projectileData) => {
             const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
@@ -485,14 +487,9 @@ export class GameScene extends Phaser.Scene {
                                 console.log(targetEnemy.hp)
                                 projectile.destroy();
                                 existingProjectiles.delete(id);
-                            });
-                            
+                            });     
                         }
                     });
-                    
-                    
-                    // Gestion des collisions avec les joueurs
-                    
                     
                     // Détruire le projectile après un délai s'il ne touche rien
                     this.time.delayedCall(3000, () => {
@@ -503,8 +500,48 @@ export class GameScene extends Phaser.Scene {
                     });
                 }
             });
+
+            socket.on("rayWarning", (data) => {
+                const graphics = this.add.graphics();
+                graphics.fillStyle(0xff0000, 0.25);
+            
+                // Calcul de l'angle et de la distance
+                const angle = Phaser.Math.Angle.Between(data.x, data.y, data.endX, data.endY);
+                const distance = Phaser.Math.Distance.Between(data.x, data.y, data.endX, data.endY);
+            
+                // Position et rotation manuelles
+                graphics.setPosition(data.x, data.y);
+                graphics.rotateCanvas(angle);
+            
+                // Dessiner le rectangle centré
+                graphics.fillRect(0, -data.width / 2, distance, data.width);
+            
+                // Supprimer le graphique après la durée
+                setTimeout(() => graphics.destroy(), data.duration);
+            });
+            
+            socket.on("rayAttack", (data) => {
+                const graphics = this.add.graphics();
+                graphics.fillStyle(0xff0000, 1);
+            
+                // Calcul de l'angle et de la distance
+                const angle = Phaser.Math.Angle.Between(data.x, data.y, data.endX, data.endY);
+                const distance = Phaser.Math.Distance.Between(data.x, data.y, data.endX, data.endY);
+            
+                // Position et rotation manuelles
+                graphics.setPosition(data.x, data.y);
+                graphics.rotateCanvas(angle);
+            
+                // Dessiner le rectangle centré
+                graphics.fillRect(0, -data.width / 2, distance, data.width);
+            
+                // Supprimer le graphique après la durée
+                setTimeout(() => graphics.destroy(), 500);
+            });
+            
+            
         }
-        
+
         syncEnemies(){
             socket.off('updateEnemies')
             socket.off('updateEnemyTarget')

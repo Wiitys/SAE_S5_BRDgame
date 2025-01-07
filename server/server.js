@@ -362,7 +362,6 @@ setInterval(() => {
 
 function bossBehavior(enemy){
     // Calcule la distance entre l'ennemi et le joueur
-
     let dx = enemy.target.x - enemy.x;
     let dy = enemy.target.y - enemy.y;
     const distanceToTarget = Math.sqrt((dx)**2 + (dy)**2);
@@ -398,29 +397,37 @@ function bossBehavior(enemy){
                 console.log("Code exécuté après x secondes.");
                 if(enemy.target && enemy.hp > 0 && !enemy.isPatrolling){
                     console.log('entré dans le if')
-                    if(distanceToTarget <= enemy.minAttackRange){
-                        //combo melee
-                        //shootAround(enemy);
-                        console.log('melee')
-                        //enemy.isAttacking = false
-                    } else if(distanceToTarget <= enemy.AttackRange && distanceToTarget > enemy.minAttackRange) {
-                        //tir laser OU charge
-                        //shootAround(enemy);
-                        console.log('laser')
-                        dx = 0;
-                        dy = 0;
-                        //enemy.isAttacking = false
-                    } else if(distanceToTarget <= enemy.maxAttackRange && distanceToTarget > enemy.attackRange){
-                        //tir circulaire
+                    // if(distanceToTarget <= enemy.minAttackRange){
+                    //     //combo melee
+                    //     //shootAround(enemy);
+                    //     console.log('melee')
+                    //     enemy.isAttacking = false
+                    if(distanceToTarget <= enemy.maxAttackRange /*&& distanceToTarget > enemy.minAttackRange*/ ){
+                        chooseRandomAttack(enemy)
+
+                        //tir circulaire ou laser
                         console.log('shoot')
                         dx = 0;
                         dy = 0;
-                        shootAround(enemy);
                     }
                 }
+                //enemy.isAttacking = false;
             }, enemy.actionDelay);
         }
     }
+}
+
+function chooseRandomAttack(enemy) {
+    const bossRangedAttacks = [
+        shootAround,          // Fonction pour l'attaque circulaire
+        rayAttack,            // Fonction pour l'attaque en rayon
+    ];
+
+    const randomIndex = Math.floor(Math.random() * bossRangedAttacks.length);
+    const selectedAttack = bossRangedAttacks[randomIndex];
+
+    // Exécuter l'attaque choisie
+    selectedAttack(enemy);
 }
 
 // Lorsque le boss attaque, on crée des projectiles autour de lui
@@ -430,16 +437,15 @@ function shootAround(enemy) {
 
     const shootInterval = setInterval(() => {
         // Angles pour les projectiles autour du boss
-        const angles = [
+        let angles = [
             0 + offset, 
-            Math.PI / 4 + offset, 
-            Math.PI / 2 + offset, 
-            3 * Math.PI / 4 + offset, 
+            Math.PI / 3 + offset, 
+            (2 * Math.PI) / 3 + offset, 
             Math.PI + offset, 
-            -3 * Math.PI / 4 + offset, 
-            -Math.PI / 2 + offset, 
-            -Math.PI / 4 + offset
+            -(2 * Math.PI) / 3 + offset, 
+            -Math.PI / 3 + offset
         ];
+        
 
         // Créer des projectiles pour chaque angle
         angles.forEach(angle => {
@@ -460,6 +466,78 @@ function shootAround(enemy) {
             enemy.isAttacking = false
         }
     }, 1000); // Répéter l'attaque toutes les 0.5 secondes
+}
+
+function rayAttack(enemy) {
+    console.log("Le boss utilise RayAttack !");
+    
+    // Longueur et largeur du rayon
+    const rayLength = 500;
+    const rayWidth = 50;
+
+    // Calculer la direction du rayon vers la cible
+    const dx = enemy.target.x - enemy.x;
+    const dy = enemy.target.y - enemy.y;
+    const distance = Math.sqrt(dx ** 2 + dy ** 2);
+
+    // Normaliser le vecteur direction pour obtenir un déplacement unitaire
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+    
+    // Calculer les points de départ et de fin du rayon
+    const rayStartX = enemy.x;
+    const rayStartY = enemy.y;
+    const rayEndX = rayStartX + directionX * rayLength;
+    const rayEndY = rayStartY + directionY * rayLength;
+
+    console.log(rayStartX,
+        rayStartY,
+        rayEndX,
+        rayEndY)
+
+    // Informer les clients de l'avertissement (zone d'effet)
+    ioServer.emit("rayWarning", {
+        x: rayStartX,
+        y: rayStartY,
+        endX: rayEndX,
+        endY: rayEndY,
+        width: rayWidth,
+        duration: 1000 // Temps avant l'attaque
+    });
+
+    // Déclencher l'attaque après l'avertissement
+    setTimeout(() => {
+        ioServer.emit("rayAttack", {
+            x: rayStartX,
+            y: rayStartY,
+            endX: rayEndX,
+            endY: rayEndY,
+            width: rayWidth
+        });
+
+        // Vérifier si des joueurs sont touchés
+        players.forEach(player => {
+            if (isPlayerHitByRay(player, rayStartX, rayStartY, rayEndX, rayEndY, rayWidth)) {
+                console.log(`Joueur ${player.id} touché par RayAttack !`);
+                player.health -= 10;
+                ioServer.emit("playerHit", {targetId: player.id, damage: 10 });
+            }
+        });
+        enemy.isAttacking = false
+    }, 1000); // Délai de 1 seconde
+}
+
+function isPlayerHitByRay(player, rayStartX, rayStartY, rayEndX, rayEndY, rayWidth) {
+    const playerX = player.x;
+    const playerY = player.y;
+
+    // Calculer la distance du joueur à la ligne du rayon
+    const distance = Math.abs(
+        (rayEndY - rayStartY) * playerX - (rayEndX - rayStartX) * playerY + rayEndX * rayStartY - rayEndY * rayStartX
+    ) / Math.sqrt((rayEndY - rayStartY) ** 2 + (rayEndX - rayStartX) ** 2);
+
+    // Vérifier si le joueur est à l'intérieur de la largeur du rayon
+    return distance <= rayWidth / 2;
 }
 
 
