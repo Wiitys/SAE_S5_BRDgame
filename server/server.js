@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const mysql = require('mysql'); // Import du module MySQL
 const app = express();
 const server = http.createServer(app);
 const path = require('path');
@@ -20,6 +21,23 @@ const FARMABLE_TYPES = ["tree", "rock"];
 const FARMABLE_RESPAWN_TIME = 5000; // Temps de réapparition en millisecondes
 
 const ENEMY_RESPAWN_TIME = 5000;
+
+// Configuration de la base de données
+const db = mysql.createConnection({
+    host: 'db', // Nom du conteneur Docker pour MySQL
+    user: 'root',
+    password: 'SAE_BRDGame',
+    database: 'game_database'
+});
+
+// Connexion à la base de données
+db.connect((err) => {
+    if (err) {
+        console.error('Erreur de connexion à la base de données :', err);
+        return;
+    }
+    console.log('Connecté à la base de données MySQL');
+});
 
 // Remonter d'un niveau avec '..' pour accéder au dossier 'Dev'
 app.use(express.static(path.join(__dirname, '..', 'Dev')));
