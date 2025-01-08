@@ -69,11 +69,11 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":402.666666666667,
+                 "x":402.667,
                  "y":332
                 }, 
                 {
-                 "height":0.666666666666629,
+                 "height":0.666667,
                  "id":20,
                  "name":"",
                  "properties":[
@@ -85,12 +85,12 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":0.666666666666742,
-                 "x":563.333333333333,
+                 "width":0.666667,
+                 "x":563.333,
                  "y":272
                 }, 
                 {
-                 "height":0.666666666666686,
+                 "height":0.666667,
                  "id":21,
                  "name":"",
                  "properties":[
@@ -102,9 +102,9 @@
                  "rotation":0,
                  "type":"",
                  "visible":true,
-                 "width":1.04444444444448,
-                 "x":446.377777777778,
-                 "y":331.822222222222
+                 "width":1.04444,
+                 "x":446.378,
+                 "y":331.822
                 }, 
                 {
                  "height":10,
@@ -120,8 +120,36 @@
                  "type":"",
                  "visible":true,
                  "width":18.5,
-                 "x":476.333333333333,
-                 "y":326.166666666667
+                 "x":476.333,
+                 "y":326.167
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":3,
+         "name":"MonsterSpawns",
+         "objects":[
+                {
+                 "height":160,
+                 "id":26,
+                 "name":"Goblin",
+                 "properties":[
+                        {
+                         "name":"spawnCount",
+                         "type":"int",
+                         "value":3
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":191,
+                 "x":576.5,
+                 "y":64.5
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -129,8 +157,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":3,
- "nextobjectid":25,
+ "nextlayerid":4,
+ "nextobjectid":27,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.0",
