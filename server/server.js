@@ -44,7 +44,7 @@ server.listen(3000, () => {
 
 createInitialFarmables()
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
-createEnemy(0, 0, 'boss','aggressive', undefined, 200, 300)
+createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1}, {category: 'Ressource', type: 'stone', quantity: 1}])
 
 ioServer.on('connection', (socket) => {
     
@@ -222,7 +222,12 @@ function destroyFarmable(farmableId, index){
 
 function destroyEnemy(index){
     // Informer tous les clients de la destruction
-    ioServer.emit('enemyDied', enemies[index].id);
+    ioServer.emit('enemyDied', enemies[index].id, );
+
+    enemies[index].dropList.forEach(drop => {
+        createDrop(drop.category, drop.type, drop.quantity, enemies[index].x, enemies[index].y);
+    });
+
     const enemy = enemies.splice(index, 1)[0];
     console.log(enemy)
     // Réapparition après un délai
@@ -256,7 +261,7 @@ function createProjectile(x,y,targetX,targetY,speed,rotation,ownerId,attackDamag
     ioServer.emit('projectileCreated', projectileData);
 }
 
-function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000) {
+function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000, dropList=[]) {
     enemyData = { 
         id: generateUniqueEnemyId(), 
         x: x, 
@@ -282,7 +287,8 @@ function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, att
             { x: x, y: y } // Retour à la position de départ
         ],
         currentPatrolIndex: 0,
-        isPatrolling: true
+        isPatrolling: true,
+        dropList: dropList
     }
 
     enemies.push(enemyData);
@@ -576,8 +582,10 @@ function aggressiveBehavior(enemy){
             setTimeout(() => {
                 console.log("Code exécuté après x secondes.");
                 if(enemy.target && enemy.hp > 0 && distanceToTarget <= enemy.maxAttackRange && !enemy.isPatrolling){
+                    console.log('rentré dans le if')
                     createProjectile(enemy.x, enemy.y, enemy.target.x, enemy.target.y, 100, 0, enemy.id, 5)
                 }
+                console.log('sorti dans le if')
                 enemy.isAttacking = false
             }, enemy.actionDelay);
         }
