@@ -1,4 +1,4 @@
-sservices:
+services:
 
   phaser-app: # frontend
     build: ./Dev/
