@@ -310,9 +310,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   startHungerManagement() {
+    this.foodometer.bar.setDepth(1);
+    this.foodometer.background.setDepth(1);
+
     this.hungerInterval = setInterval(() => {
         this.hungerManagement();
     }, 10000); // 10 000 ms = 10 secondes
+
+    this.regenInterval = setInterval(() => {
+      if(this.foodometer.currentHealth >= 0.9*this.foodometer.maxHealth){
+        this.playerHP.addHealth(4)
+      }
+    }, 4000); // 10 000 ms = 10 secondes
   }
 
   stopHungerManagement() {
@@ -323,7 +332,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if(this.equippedTool.value && this.equippedTool.quantity > 0){
       this.foodometer.addHealth(this.equippedTool.value);
       this.equippedTool.quantity--;
-      this.scene.inventory.removeItem(this.equippedTool.type, this.equippedTool.quantity)
+      this.scene.inventory.removeItem(this.equippedTool.type, 1)
     }
 
     if(this.equippedTool.quantity == 0){

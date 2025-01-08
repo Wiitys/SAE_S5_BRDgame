@@ -193,12 +193,16 @@ export default class InventoryUI {
         this.inventoryContainer.setVisible(true);
         this.scene.children.bringToTop(this.inventoryContainer);
         this.scene.player.setDepth(0);
+        this.scene.player.foodometer.bar.setDepth(0);
+        this.scene.player.foodometer.background.setDepth(0);
     }
 
     hideUI() {
         this.visible = false;
         this.inventoryContainer.setVisible(false);
         this.scene.player.setDepth(1);
+        this.scene.player.foodometer.bar.setDepth(1);
+        this.scene.player.foodometer.background.setDepth(1);
     }
 
     toggleUI() {

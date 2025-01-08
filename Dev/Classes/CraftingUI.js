@@ -37,7 +37,7 @@ export default class CraftingUI {
         background.setStrokeStyle(2, 0xffffff);
         
         this.craftingContainer.add(background);
-        
+
         const title = this.scene.add.text(bgX + bgWidth / 2, bgY + 20, 'Crafting', {
             fontSize: '24px',
             color: '#ffffff',
@@ -258,6 +258,8 @@ export default class CraftingUI {
         this.enableCraftingInputs();
         this.scene.children.bringToTop(this.craftingContainer);
         this.scene.player.setDepth(0);
+        this.scene.player.foodometer.bar.setDepth(0);
+        this.scene.player.foodometer.background.setDepth(0);
     }
     
     hideUI() {
@@ -268,6 +270,8 @@ export default class CraftingUI {
         // Désactiver les inputs spécifiques au crafting
         this.disableCraftingInputs();
         this.scene.player.setDepth(1);
+        this.scene.player.foodometer.bar.setDepth(1);
+        this.scene.player.foodometer.background.setDepth(1);
     }
     
     enableCraftingInputs() {
