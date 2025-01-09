@@ -89,6 +89,7 @@ CREATE TABLE WeaponsTools(
    id_weapon INT,
    weapon_name VARCHAR(50),
    is_craftable BOOLEAN,
+   quantity INT,
    range_tool INT,
    angle INT,
    farmableDamage INT,
@@ -119,7 +120,8 @@ CREATE TABLE FriendPlayer(
 CREATE TABLE CraftRessources(
    id_ressource INT,
    id_craft INT,
-   id_craft_1 INT,
+   id_subcraft INT,
+   quantity_out INT,
    quantity_needed INT,
    PRIMARY KEY(id_ressource, id_craft, id_craft_1),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
