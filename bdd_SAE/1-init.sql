@@ -63,7 +63,9 @@ CREATE TABLE Ennemies(
    attackRange INT,
    searchRange INT,
    actionDelay VARCHAR(50),
-   PRIMARY KEY(id_ennemies)
+   id_ressource INT,
+   PRIMARY KEY(id_ennemies),
+   FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
 CREATE TABLE Farmables(
@@ -119,13 +121,13 @@ CREATE TABLE FriendPlayer(
 CREATE TABLE CraftRessources(
    id_ressource INT,
    id_craft INT,
-   id_subcraft INT,
+   id_craft_1 INT,
    quantity_out, INT,
    quantity_needed INT,
-   PRIMARY KEY(id_ressource, id_craft, id_subcraft),
+   PRIMARY KEY(id_ressource, id_craft, id_craft_1),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
    FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft),
-   FOREIGN KEY(id_subcraft) REFERENCES Crafts(id_craft)
+   FOREIGN KEY(id_craft_1) REFERENCES Crafts(id_craft)
 );
 
 CREATE TABLE PlayersParty(

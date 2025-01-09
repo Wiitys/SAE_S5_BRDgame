@@ -50,7 +50,7 @@ VALUES
 
 
 -- CraftRessources
-INSERT INTO CraftRessources (id_ressource, id_craft, id_subcraft, quantity_out, quantity_needed)
+INSERT INTO CraftRessources (id_ressource, id_craft, id_craft_1, quantity_out, quantity_needed)
 VALUES
 (1, 1, 0, 2, 1),
 (1, 2, 0, 4, 2),
