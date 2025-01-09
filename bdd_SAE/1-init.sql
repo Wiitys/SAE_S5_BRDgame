@@ -123,10 +123,10 @@ CREATE TABLE CraftRessources(
    id_subcraft INT,
    quantity_out INT,
    quantity_needed INT,
-   PRIMARY KEY(id_ressource, id_craft, id_craft_1),
+   PRIMARY KEY(id_ressource, id_craft, id_subcraft),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
    FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft),
-   FOREIGN KEY(id_craft_1) REFERENCES Crafts(id_craft)
+   FOREIGN KEY(id_subcraft) REFERENCES Crafts(id_craft)
 );
 
 CREATE TABLE PlayersParty(
