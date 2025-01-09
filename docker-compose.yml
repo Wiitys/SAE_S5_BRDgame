@@ -36,6 +36,7 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./bdd_SAE:/docker-entrypoint-initdb.d # Monte le dossier database/ pour init.sql
     networks:
       - dev_network
 
