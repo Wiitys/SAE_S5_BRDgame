@@ -45,7 +45,7 @@ CREATE TABLE Crafts(
 CREATE TABLE Parties(
    id_party INT,
    name_party VARCHAR(50),
-   is_private LOGICAL,
+   is_private BOOLEAN,
    password VARCHAR(25),
    id_map INT NOT NULL,
    id_server INT NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE Farmables(
 CREATE TABLE Armour(
    id_armour INT,
    armour_name VARCHAR(50),
-   is_craftable LOGICAL,
+   is_craftable BOOLEAN,
    effect VARCHAR(50),
    resistance INT,
    id_craft INT NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE Armour(
 CREATE TABLE WeaponsTools(
    id_weapon INT,
    weapon_name VARCHAR(50),
-   is_craftable LOGICAL,
+   is_craftable BOOLEAN,
    range_tool INT,
    angle INT,
    farmableDamage INT,
