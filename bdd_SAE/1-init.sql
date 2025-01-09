@@ -65,6 +65,7 @@ CREATE TABLE Ennemies(
    actionDelay VARCHAR(50),
    id_ressource INT,
    PRIMARY KEY(id_ennemies),
+   UNIQUE(id_ennemies),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
