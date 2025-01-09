@@ -122,7 +122,7 @@ CREATE TABLE CraftRessources(
    id_ressource INT,
    id_craft INT,
    id_craft_1 INT,
-   quantity_out, INT,
+   quantity_out INT,
    quantity_needed INT,
    PRIMARY KEY(id_ressource, id_craft, id_craft_1),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
