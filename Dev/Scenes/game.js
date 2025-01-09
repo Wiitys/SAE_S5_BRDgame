@@ -45,8 +45,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
     }
     
-    create() {
-        
+    create() {        
         //créer les instances
         this.player = new Player(this, 0, 0);
         this.cursor = this.input.keyboard.createCursorKeys();
@@ -107,7 +106,7 @@ export class GameScene extends Phaser.Scene {
         this.player.update();
         this.updateOtherPlayers();
     }
-    
+
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);

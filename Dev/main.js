@@ -8,8 +8,8 @@ import'./Scenes/game.js'
 //config du jeu
 const config = {
   type:Phaser.WEBGL,
-  width: 500,
-  height: 500,
+  width: window.innerWidth, // Utiliser la largeur de la fenêtre
+  height: window.innerHeight, // Utiliser la hauteur de la fenêtre
   canvas: gameCanvas,
   pixelArt: true, 
   physics:{
@@ -18,7 +18,24 @@ const config = {
       debug:true
     }
   },
+  scale: {
+    mode: Phaser.Scale.RESIZE, // Mode de redimensionnement dynamique
+    autoCenter: Phaser.Scale.CENTER_BOTH // Centrer automatiquement le canvas
+  },
   scene:[MenuScene, GameScene]
 }
 
 const game = new Phaser.Game(config)
+
+window.addEventListener('resize', () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  game.scale.resize(width, height);
+  
+  game.scene.scenes.forEach(scene => {
+    if (scene.cameras && scene.cameras.main) {
+      scene.cameras.main.setSize(width, height);
+    }
+  });
+});
