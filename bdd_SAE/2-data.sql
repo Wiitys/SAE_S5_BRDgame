@@ -12,10 +12,34 @@ VALUES
 -- Ressources
 INSERT INTO Ressources (id_ressource, ressource_name, category, value_food)
 VALUES
-(1, 'wood', 'ressource', 0),
-(2, 'stone', 'ressource', 0),
-(3, 'moltenIron', 'ressource', 0),
-(4, 'meat', 'food', 20);
+(1, 'wood', 'Ressource', 0),
+(2, 'stone', 'Ressource', 0),
+(3, 'iron', 'Ressource', 0),
+(4, 'meat', 'food', 20),
+(5, 'stick', 'Ressource', 0),
+(6, 'plank', 'Ressource', 0),
+(7, 'gold', 'Ressource', 0);
+(8, 'apple', 'food', 5),
+
+
+-- Farmable
+INSERT INTO Farmables (id_farmable, type, health_points)
+VALUES
+(1, 'tree', 10),
+(2, 'rock', 10),
+(3, 'ironOre', 10),
+(4, 'goldOre', 10);
+
+
+-- dropTypeFarm
+INSERT INTO dropTypeFarm (id_ressource, id_farmable)
+VALUES
+(1, 1),  -- wood for tree
+(2, 2),  -- stone for rock
+(3, 3),  -- iron for ironOre
+(7, 4),  -- gold for goldOre
+(5, 1),  -- stick for tree
+(8, 1);  -- apple for tree
 
 
 -- Ennemis
@@ -38,20 +62,20 @@ VALUES
 (10, 'ironPickaxe');
 
 -- Armes et outils
-INSERT INTO WeaponsTools (id_weapon, weapon_name, is_craftable, quantity, range_tool, angle, farmableDamage, attackDamage, id_craft)
+INSERT INTO WeaponsTools (id_weapon, weapon_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
 VALUES
-(1, 'woodenAxe', TRUE, 1, 30, 60, 2, 2, 4),
-(2, 'woodenPickaxe', TRUE, 1, 60, 20, 3, 2, 5),
-(3, 'stonePickaxe', TRUE, 1, 45, 90, 4, 3, 6),
-(4, 'stoneAxe', TRUE, 1, 70, 90, 4, 3, 7),
-(5, 'ironSword', TRUE, 1, 90, 70, 0, 10, 8),
-(6, 'ironAxe', TRUE, 1, 70, 90, 8, 5, 9),
-(7, 'ironPickaxe', TRUE, 1, 45, 90, 8, 5, 10);
+(1, 'woodenAxe', TRUE, 30, 60, 2, 2, 4),
+(2, 'woodenPickaxe', TRUE, 60, 20, 3, 2, 5),
+(3, 'stonePickaxe', TRUE, 45, 90, 4, 3, 6),
+(4, 'stoneAxe', TRUE, 70, 90, 4, 3, 7),
+(5, 'ironSword', TRUE, 90, 70, 0, 10, 8),
+(6, 'ironAxe', TRUE, 70, 90, 8, 5, 9),
+(7, 'ironPickaxe', TRUE, 45, 90, 8, 5, 10);
 
 
 -- CraftRessources
-INSERT INTO CraftRessources (id_ressource, id_craft, id_craft_1, quantity_out, quantity_needed)
+INSERT INTO CraftRessources (id_ressource, id_craft, quantity_out, quantity_needed)
 VALUES
-(1, 1, 0, 2, 1),
-(1, 2, 0, 4, 2),
-(3, 3, 0, 1, 2);
+(1, 1, 2, 1),
+(1, 2, 4, 2),
+(3, 3, 1, 2);

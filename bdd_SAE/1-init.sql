@@ -72,7 +72,7 @@ CREATE TABLE Ennemies(
 CREATE TABLE Farmables(
    id_farmable INT,
    type VARCHAR(50),
-   health_point INT,
+   health_points INT,
    PRIMARY KEY(id_farmable)
 );
 
@@ -122,13 +122,11 @@ CREATE TABLE FriendPlayer(
 CREATE TABLE CraftRessources(
    id_ressource INT,
    id_craft INT,
-   id_craft_1 INT,
    quantity_out INT,
    quantity_needed INT,
-   PRIMARY KEY(id_ressource, id_craft, id_craft_1),
+   PRIMARY KEY(id_ressource, id_craft),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
-   FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft),
-   FOREIGN KEY(id_craft_1) REFERENCES Crafts(id_craft)
+   FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft)
 );
 
 CREATE TABLE PlayersParty(

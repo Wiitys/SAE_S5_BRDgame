@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const mysql = require('mysql'); // Import du module MySQL
+const mysql = require('mysql2'); // Import du module MySQL
 const app = express();
 const server = http.createServer(app);
 const path = require('path');
@@ -22,30 +22,94 @@ const FARMABLE_RESPAWN_TIME = 5000; // Temps de réapparition en millisecondes
 
 const ENEMY_RESPAWN_TIME = 5000;
 
-// Configuration de la base de données
-const db = mysql.createConnection({
-    host: 'db', // Nom du conteneur Docker pour MySQL
-    user: 'root',
-    password: 'SAE_BRDGame',
-    database: 'game_database'
-});
-
-// Connexion à la base de données
-db.connect((err) => {
-    if (err) {
-        console.error('Erreur de connexion à la base de données :', err);
-        return;
-    }
-    console.log('Connecté à la base de données MySQL');
-});
-
 // Remonter d'un niveau avec '..' pour accéder au dossier 'Dev'
 app.use(express.static(path.join(__dirname, '..', 'Dev')));
+
+// Middleware pour le JSON
+app.use(express.json());
 
 // Fallback pour index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'Dev', 'index.html'));
 });
+
+
+// Configuration de la base de données
+const db = mysql.createConnection({
+    host: 'db', // Nom du conteneur Docker pour MySQL
+    user: 'root',
+    password: 'SAE_BRDGame',
+    database: 'game_database',
+});
+
+// Connexion à la base de données
+db.promise().connect()
+    .then(() => {
+        console.log('Connecté à la base de données MySQL');
+    })
+    .catch((err) => {
+        console.error('Erreur de connexion à la base de données :', err);
+    });
+
+// Fonction générique pour exécuter des requêtes
+function queryDatabase(query) {
+    return new Promise((resolve, reject) => {
+        db.query(query, (err, results) => {
+            if (err) {
+                console.error('Erreur lors de la requete :', err);
+                reject(err); // Rejeter la promesse en cas d'erreur
+            } else {
+                resolve(results); // Résoudre la promesse avec les résultats
+            }
+        });
+    });
+}
+
+// Déclaration de la variable farmablesData
+let farmablesData = {};
+
+async function getFarmables() {
+    try {
+        // Attendre que la promesse renvoyée par queryDatabase se résolve
+        const results = await queryDatabase(`
+            SELECT 
+                f.id_farmable,
+                f.type, 
+                f.health_points as hp,
+                r.category as dropCategory,  
+                r.ressource_name as dropType
+            FROM 
+                Farmables f
+            JOIN 
+                dropTypeFarm dtf ON f.id_farmable = dtf.id_farmable
+            JOIN 
+                Ressources r ON dtf.id_ressource = r.id_ressource;
+        `);
+
+        // Parcours des résultats et regroupement des données
+        results.forEach(farmable => {
+            const { id_farmable, type, hp, dropType, dropCategory } = farmable;
+
+            // Si le farmable n'existe pas encore dans farmablesData, on le crée
+            if (!farmablesData[id_farmable]) {
+                farmablesData[id_farmable] = {
+                    type: type,
+                    hp: hp,
+                    drops: []  // Tableau pour contenir les drops
+                };
+            }
+
+            // Ajouter le drop au tableau "drops" pour ce farmable
+            farmablesData[id_farmable].drops.push({ dropType, dropCategory });
+        });
+    } catch (err) {
+        console.error('Erreur lors de la récupération des farmables :', err);
+    }
+}
+
+// Appel de la fonction pour récupérer les farmables
+getFarmables();
+
 
 const ioServer = new socketIO.Server(server, {
     cors: {
@@ -62,7 +126,7 @@ server.listen(3000, () => {
 
 createInitialFarmables()
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
-createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1}, {category: 'Ressource', type: 'stone', quantity: 1}])
+//createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1}, {category: 'Ressource', type: 'stone', quantity: 1}])
 
 ioServer.on('connection', (socket) => {
     
@@ -214,15 +278,22 @@ function generateUniqueEnemyId() {
 }
 
 // Fonction pour créer un farmable
-function createFarmable(type, x, y) {
-    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, hp: 10 };
+function createFarmable(type, x, y, dropsData, hp) {
+    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, hp: hp, drops: dropsData};
     farmables.push(farmable);
     ioServer.emit('farmableCreated', farmable);
 }
 
 function createInitialFarmables() {
-    farmables.push({ id: generateUniqueFarmableId(), type: "tree", x: 200, y: 200, hp: 10 });
-    farmables.push({ id: generateUniqueFarmableId(), type: "rock", x: 300, y: 300, hp: 10 });
+    let x = 100;
+    let y = 0;
+
+    Object.values(farmablesData).forEach(farmable => {
+
+        // Appeler la fonction pour créer le farmable
+        createFarmable(farmable.type, x, y, farmable.drops, farmable.hp);  // Passer les drops en paramètre
+        x+=100;
+    });
 }
 
 function destroyFarmable(farmableId, index){
@@ -234,7 +305,7 @@ function destroyFarmable(farmableId, index){
     
     // Réapparition après un délai
     setTimeout(() => {
-        createFarmable(farmable.type, farmable.x, farmable.y);
+        createFarmable(farmable.type, farmable.x, farmable.y, farmable.drops, farmable.hp);
     }, FARMABLE_RESPAWN_TIME);
 }
 
@@ -588,6 +659,7 @@ function aggressiveBehavior(enemy){
 
     // Arrête l'ennemi s'il est à moins de sa range du joueur
     } else if (distanceToTarget < enemy.attackRange) {
+        enemy.isPatrolling = false;
         if (distanceToTarget < enemy.minAttackRange) {
             dx = 0
             dy = 0
@@ -633,6 +705,7 @@ function neutralBehavior(enemy){
 
     // Arrête l'ennemi s'il est à moins de sa range du joueur
     } else if (distanceToTarget < enemy.attackRange && enemy.isHit) {
+        enemy.isPatrolling = false;
         if (distanceToTarget < enemy.minAttackRange) {
             dx = 0
             dy = 0

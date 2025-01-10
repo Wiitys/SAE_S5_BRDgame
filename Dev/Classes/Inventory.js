@@ -39,6 +39,8 @@ export default class Inventory {
             this.inventory[type] = new Ressource(type, quantity);
         } else if (category === "Tool") {
             this.inventory[type] = this.tools[type];
+        } else if (category === "Food") {
+            this.inventory[type] = {type:type, quantity:quantity};
         }
     }
 

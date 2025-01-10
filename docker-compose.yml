@@ -9,6 +9,8 @@ services:
       - dev_network
     mem_limit: 512m   # Limite de mémoire
     cpus: "0.5"       # Limite de CPU (50% d'un core)
+    depends_on:
+      - server
 
   server: # backend
     build: ./server/
@@ -24,6 +26,8 @@ services:
       options:
         max-size: "10m"    # Limite la taille du fichier de log
         max-file: "3"      # Limite le nombre de fichiers de log
+    depends_on:
+      - db
 
   db:  # base de données MySQL
     image: mysql:8.0

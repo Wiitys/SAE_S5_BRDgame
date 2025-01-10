@@ -38,11 +38,16 @@ export class GameScene extends Phaser.Scene {
         //farmables
         this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image("rock", "/assets/rock.png");
+        this.load.image("ironOre", "/assets/ironOre.png");
+        this.load.image("goldOre", "/assets/goldOre.png");
         
         //ressources
         this.load.image("wood", "/assets/wood.png");
         this.load.image("stone", "/assets/stone.png");
         this.load.image("meat", "/assets/meat.png");
+        this.load.image("apple", "/assets/apple.png");
+        this.load.image("iron", "/assets/iron.png");
+        this.load.image("gold", "/assets/gold.png");
         
         //tools
         this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
@@ -90,17 +95,12 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.createUI();
         this.inventory.updateInventoryText();
-        
-        this.ennemiRanged = new Ennemi(this, 400, 300, 'ennemi', 'ranged', 'neutral', 100, 50, 150, 300, 2000);
-        this.ennemiMelee = new Ennemi(this, 400, 300, 'ennemi', 'melee', 'aggressive');
     }
     
     update() {
         // Gestion des mouvements du joueur
         this.player.update();
         this.updateOtherPlayers();
-        this.ennemiRanged.getClosestTarget(this.player)
-        this.ennemiMelee.getClosestTarget(this.player)
     }
     
     createEnemy(x, y, type, id) {
@@ -116,28 +116,13 @@ export class GameScene extends Phaser.Scene {
         console.log(enemy)
     }
     
-    createFarmable(type, x, y, id, hp) {
+    createFarmable(type, x, y, id, hp, drops) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);
         farmableElement.setOrigin(0.5, 0.5);
         farmableElement.id = id;
-        
-        switch (type) {
-            case "tree":
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "wood";
-            break;
-            case "rock":
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "stone";
-            break;
-            default:
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "wood";
-        }
+        farmableElement.setDisplaySize(32, 32);
+        farmableElement.drops = drops;
         
         // Associer un objet Farmable à l'instance
         farmableElement.farmableData = new Farmable(type, hp);
@@ -145,21 +130,44 @@ export class GameScene extends Phaser.Scene {
     
     hitFarmable(player, farmableElement, damage) {
         const farmable = farmableElement.farmableData;
-        const category = farmableElement.category;
-        const dropType = farmableElement.dropType;
-        
+        const drops = farmableElement.drops;
+        let randomDrop = {};
+        let finalDrops = {};
+
         if (farmable) {
             const dropQuantity = Math.min(damage, farmable.currentHp);
-            console.log(dropQuantity)
-            const drop = {
-                category: category,
-                type: dropType,
-                quantity: dropQuantity,
-                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
-                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
-            };
-            socket.emit('hitFarmable', farmableElement.id);
-            socket.emit('createDrop', drop);
+
+            // Pour chaque "hit", choisir un drop aléatoire
+            for (let i = 0; i < dropQuantity; i++) {
+                randomDrop = drops[Phaser.Math.Between(0, drops.length - 1)];
+                
+                // Si le drop existe déjà, on incrémente sa quantité
+                if (finalDrops[randomDrop.dropType]) {
+                    finalDrops[randomDrop.dropType].quantity++;
+                } else {
+                    // Sinon, on l'ajoute et on initialise sa quantité
+                    finalDrops[randomDrop.dropType] = {
+                        dropType: randomDrop.dropType,
+                        dropCategory: randomDrop.dropCategory,
+                        quantity: 1
+                    };
+                }
+            }
+
+            Object.values(finalDrops).forEach(farmableDrop => {
+
+                const drop = {
+                    category: farmableDrop.category,
+                    type: farmableDrop.dropType,
+                    quantity: farmableDrop.quantity,
+                    x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                    y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+                };
+                socket.emit('hitFarmable', farmableElement.id);
+                socket.emit('createDrop', drop);
+                
+            });
+            
         }
     }
     
@@ -172,7 +180,7 @@ export class GameScene extends Phaser.Scene {
             //farmableElement.setFrame(1);  pas encore fait
             break;
             default:
-            farmableElement.setFrame(1);
+            break;
         }
     }
     
@@ -353,7 +361,7 @@ export class GameScene extends Phaser.Scene {
             farmables.forEach(farmable => {
                 console.log('Farmable venant de liste reçu ' + farmable.id)
                 if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
-                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp, farmable.drops);
                     existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
                     console.log('farmable trouvé')
                 }
@@ -363,7 +371,7 @@ export class GameScene extends Phaser.Scene {
         socket.on('farmableCreated', (farmable) => {
             console.log('Farmable créé reçu ' + farmable.id);
             if (!existingFarmables.has(farmable.id)) {
-                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp, farmable.drops);
                 existingFarmables.add(farmable.id);
             }
         });
