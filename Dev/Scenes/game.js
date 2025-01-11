@@ -87,11 +87,11 @@ export class GameScene extends Phaser.Scene {
         this.inventory = new Inventory(this);
         
         // Exemple : Ajouter des ressources pour tester
-        this.inventory.addItem("Ressource", "wood", 10);
-        this.inventory.addItem("Ressource", "stone", 5);
+        this.inventory.addItem("Ressource", "wood", 10, 0);
+        this.inventory.addItem("Ressource", "stone", 5, 0);
         
-        this.inventory.addItem("Tool", "stoneAxe", 1);
-        this.inventory.addItem("Tool", "woodenPickaxe", 1);
+        this.inventory.addItem("Tool", "stoneAxe", 1, 0);
+        this.inventory.addItem("Tool", "woodenPickaxe", 1, 0);
         
         this.inventory.createUI();
         this.inventory.updateInventoryText();
@@ -123,7 +123,6 @@ export class GameScene extends Phaser.Scene {
         farmableElement.id = id;
         farmableElement.setDisplaySize(32, 32);
         farmableElement.drops = drops;
-        
         // Associer un objet Farmable à l'instance
         farmableElement.farmableData = new Farmable(type, hp);
     }
@@ -149,26 +148,26 @@ export class GameScene extends Phaser.Scene {
                     finalDrops[randomDrop.dropType] = {
                         dropType: randomDrop.dropType,
                         dropCategory: randomDrop.dropCategory,
-                        quantity: 1
+                        quantity: 1,
+                        dropValue: randomDrop.dropValue
                     };
                 }
             }
-            console.log(finalDrops)
+
             Object.values(finalDrops).forEach(farmableDrop => {
 
                 const drop = {
                     category: farmableDrop.dropCategory,
                     type: farmableDrop.dropType,
                     quantity: farmableDrop.quantity,
+                    value: farmableDrop.dropValue,
                     x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
                     y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
                 };
-                console.log(drop)
+
                 socket.emit('hitFarmable', farmableElement.id);
                 socket.emit('createDrop', drop);
-                
             });
-            
         }
     }
     
@@ -185,7 +184,7 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
-    createDrop(category, type, quantity, x, y, id) {
+    createDrop(category, type, quantity, value, x, y, id) {
         
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
@@ -195,7 +194,7 @@ export class GameScene extends Phaser.Scene {
         );
         dropElement.id = id;
         dropElement.setDisplaySize(30, 30);
-        dropElement.dropData = new Drop(category, type, quantity);
+        dropElement.dropData = new Drop(category, type, quantity, value);
         // Ajouter une physique de collision pour permettre la collecte
         this.physics.add.overlap(
             this.player,
@@ -213,8 +212,7 @@ export class GameScene extends Phaser.Scene {
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
         if (drop.type) {
-            this.inventory.addItem(drop.category, drop.type, drop.quantity)
-            console.log(drop)
+            this.inventory.addItem(drop.category, drop.type, drop.quantity, drop.value)
             this.inventory.updateInventoryText();
             console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
             socket.emit('collectDrop', id);
@@ -419,7 +417,7 @@ export class GameScene extends Phaser.Scene {
             drops.forEach(drop => {
                 console.log('resource venant de liste reçu ' + drop.id)
                 if (!existingDrops.has(drop.id)) { // Vérifier si la resource existe déjà
-                    this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                    this.createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y, drop.id);
                     existingDrops.add(drop.id); // Ajouter l'ID à l'ensemble
                 }
             });
@@ -428,7 +426,7 @@ export class GameScene extends Phaser.Scene {
         socket.on('dropCreated', (drop) => {
             console.log('Drop créé reçu ' + drop.id);
             if (!existingDrops.has(drop.id)) {
-                this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                this.createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y, drop.id);
                 existingDrops.add(drop.id);
             }
         });

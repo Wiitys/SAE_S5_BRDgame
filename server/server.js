@@ -83,7 +83,8 @@ async function getFarmables() {
                 f.type, 
                 f.health_points as hp,
                 r.category as dropCategory,  
-                r.ressource_name as dropType
+                r.ressource_name as dropType,
+                r.value_food as dropValue
             FROM 
                 Farmables f
             JOIN 
@@ -94,7 +95,7 @@ async function getFarmables() {
 
         // Parcours des résultats et regroupement des données
         results.forEach(farmable => {
-            const { id_farmable, type, hp, dropType, dropCategory } = farmable;
+            const { id_farmable, type, hp, dropType, dropCategory, dropValue } = farmable;
 
             // Si le farmable n'existe pas encore dans farmablesData, on le crée
             if (!farmablesData[id_farmable]) {
@@ -106,10 +107,8 @@ async function getFarmables() {
             }
 
             // Ajouter le drop au tableau "drops" pour ce farmable
-            farmablesData[id_farmable].drops.push({ dropType, dropCategory });
+            farmablesData[id_farmable].drops.push({ dropType, dropCategory, dropValue });
         });
-        console.log(results)
-        console.log(farmablesData)
 
         createInitialFarmables()
     } catch (err) {
@@ -135,7 +134,7 @@ server.listen(3000, () => {
 
 
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
-//createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1}, {category: 'Ressource', type: 'stone', quantity: 1}])
+//createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1, value: 0}, {category: 'Ressource', type: 'stone', quantity: 1, value: 0}, {category: 'Food', type: 'meat', quantity: 1, value: 20}])
 
 ioServer.on('connection', (socket) => {
     
@@ -212,7 +211,7 @@ ioServer.on('connection', (socket) => {
     });
     
     socket.on('createDrop', (drop) => {
-        createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y);
+        createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y);
         console.log(`create drop ${drop.quantity}`)
     });
 
@@ -287,8 +286,9 @@ function generateUniqueEnemyId() {
 }
 
 // Fonction pour créer un farmable
-function createFarmable(type, x, y, dropsData, hp) {
-    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, hp: hp, drops: dropsData};
+function createFarmable(type, x, y, dropsData, maxHp) {
+    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, maxHp: maxHp, hp: maxHp, drops: dropsData};
+    console.log(farmable)
     farmables.push(farmable);
     ioServer.emit('farmableCreated', farmable);
 }
@@ -311,10 +311,10 @@ function destroyFarmable(farmableId, index){
     
     // Informer tous les clients de la destruction
     ioServer.emit('farmableDestroyed', farmableId);
-    
+    console.log(farmable.drops)
     // Réapparition après un délai
     setTimeout(() => {
-        createFarmable(farmable.type, farmable.x, farmable.y, farmable.drops, farmable.hp);
+        createFarmable(farmable.type, farmable.x, farmable.y, farmable.drops, farmable.maxHp);
     }, FARMABLE_RESPAWN_TIME);
 }
 
@@ -323,20 +323,20 @@ function destroyEnemy(index){
     ioServer.emit('enemyDied', enemies[index].id, );
 
     enemies[index].dropList.forEach(drop => {
-        createDrop(drop.category, drop.type, drop.quantity, enemies[index].x, enemies[index].y);
+        createDrop(drop.category, drop.type, drop.quantity, drop.value, enemies[index].x, enemies[index].y);
     });
 
     const enemy = enemies.splice(index, 1)[0];
-    console.log(enemy)
+
     // Réapparition après un délai
     setTimeout(() => {
-        createEnemy(enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay);
+        createEnemy(enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay, enemy.dropList);
     }, ENEMY_RESPAWN_TIME);
 }
 
 // Fonction pour créer une drop
-function createDrop(category, type, quantity, x, y) {
-    const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, x: x, y: y };
+function createDrop(category, type, quantity, value, x, y) {
+    const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, value: value, x: x, y: y };
     drops.push(drop);
     ioServer.emit('dropCreated', drop);
 }

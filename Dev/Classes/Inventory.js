@@ -32,7 +32,7 @@ export default class Inventory {
         this.unequipButton = null;
     }
 
-    addItem(category, type, quantity) {
+    addItem(category, type, quantity, value) {
         if (this.inventory[type]) {
             this.inventory[type].quantity += quantity;
         } else if (category === "Ressource") {
@@ -40,7 +40,7 @@ export default class Inventory {
         } else if (category === "Tool") {
             this.inventory[type] = this.tools[type];
         } else if (category === "Food") {
-            this.inventory[type] = {type:type, quantity:quantity};
+            this.inventory[type] = {type:type, quantity:quantity, value:value};
         }
     }
 

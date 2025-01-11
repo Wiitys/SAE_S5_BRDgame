@@ -206,6 +206,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       });
 
       // Si la bounding box de la cible est dans le cône, appliquer l'attaque
+      console.log(isTargetInCone)
       if (isTargetInCone) {
         this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
       }
@@ -332,6 +333,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       target.takeDamage(attackDamageEntities); 
     }
     else{
+      console.log(target)
       this.scene.hitFarmable(this, target, attackDamageFarmables);
     }
   }
