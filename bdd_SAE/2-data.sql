@@ -15,11 +15,11 @@ VALUES
 (1, 'wood', 'Ressource', 0),
 (2, 'stone', 'Ressource', 0),
 (3, 'iron', 'Ressource', 0),
-(4, 'meat', 'food', 20),
+(4, 'meat', 'Food', 20),
 (5, 'stick', 'Ressource', 0),
 (6, 'plank', 'Ressource', 0),
 (7, 'gold', 'Ressource', 0),
-(8, 'apple', 'food', 5);
+(8, 'apple', 'Food', 5);
 
 
 -- Farmable

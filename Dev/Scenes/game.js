@@ -216,7 +216,7 @@ export class GameScene extends Phaser.Scene {
             this.inventory.addItem(drop.category, drop.type, drop.quantity)
             console.log(drop)
             this.inventory.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}`);
+            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
             socket.emit('collectDrop', id);
         } else {
             console.log(`drop ${drop.type} non définie.`);
