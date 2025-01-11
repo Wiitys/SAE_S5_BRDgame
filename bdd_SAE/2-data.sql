@@ -18,8 +18,8 @@ VALUES
 (4, 'meat', 'food', 20),
 (5, 'stick', 'Ressource', 0),
 (6, 'plank', 'Ressource', 0),
-(7, 'gold', 'Ressource', 0);
-(8, 'apple', 'food', 5),
+(7, 'gold', 'Ressource', 0),
+(8, 'apple', 'food', 5);
 
 
 -- Farmable

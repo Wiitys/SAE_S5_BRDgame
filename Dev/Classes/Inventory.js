@@ -27,6 +27,9 @@ export default class Inventory {
             stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
             bow: new RangedWeapon('bow', 1, 300, 5),
         };
+        this.foods = {
+            apple: {type: 'apple', quantity:0},
+        }
         this.itemSelected = null;
         this.itemButtons = {};
         this.unequipButton = null;
@@ -39,8 +42,6 @@ export default class Inventory {
             this.inventory[type] = new Ressource(type, quantity);
         } else if (category === "Tool") {
             this.inventory[type] = this.tools[type];
-        } else if (category === "Food") {
-            this.inventory[type] = {type:type, quantity:quantity};
         }
     }
 

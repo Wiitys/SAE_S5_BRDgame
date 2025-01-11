@@ -33,7 +33,6 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'Dev', 'index.html'));
 });
 
-
 // Configuration de la base de données
 const db = mysql.createConnection({
     host: 'db', // Nom du conteneur Docker pour MySQL
@@ -42,14 +41,21 @@ const db = mysql.createConnection({
     database: 'game_database',
 });
 
-// Connexion à la base de données
-db.promise().connect()
-    .then(() => {
-        console.log('Connecté à la base de données MySQL');
-    })
-    .catch((err) => {
-        console.error('Erreur de connexion à la base de données :', err);
-    });
+setTimeout(() => {
+    // Connexion à la base de données
+    db.promise().connect()
+        .then(() => {
+            console.log('Connecté à la base de données MySQL');
+        })
+        .catch((err) => {
+            console.error('Erreur de connexion à la base de données :', err);
+        });
+
+    // Appel de la fonction pour récupérer les farmables
+    getFarmables();
+    
+}, 10000);
+
 
 // Fonction générique pour exécuter des requêtes
 function queryDatabase(query) {
@@ -102,13 +108,16 @@ async function getFarmables() {
             // Ajouter le drop au tableau "drops" pour ce farmable
             farmablesData[id_farmable].drops.push({ dropType, dropCategory });
         });
+        console.log(results)
+        console.log(farmablesData)
+
+        createInitialFarmables()
     } catch (err) {
         console.error('Erreur lors de la récupération des farmables :', err);
     }
 }
 
-// Appel de la fonction pour récupérer les farmables
-getFarmables();
+
 
 
 const ioServer = new socketIO.Server(server, {
@@ -124,7 +133,7 @@ server.listen(3000, () => {
     console.log('Server is listening on port 3000');
 });
 
-createInitialFarmables()
+
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
 //createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1}, {category: 'Ressource', type: 'stone', quantity: 1}])
 

@@ -153,16 +153,17 @@ export class GameScene extends Phaser.Scene {
                     };
                 }
             }
-
+            console.log(finalDrops)
             Object.values(finalDrops).forEach(farmableDrop => {
 
                 const drop = {
-                    category: farmableDrop.category,
+                    category: farmableDrop.dropCategory,
                     type: farmableDrop.dropType,
                     quantity: farmableDrop.quantity,
                     x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
                     y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
                 };
+                console.log(drop)
                 socket.emit('hitFarmable', farmableElement.id);
                 socket.emit('createDrop', drop);
                 
@@ -213,8 +214,9 @@ export class GameScene extends Phaser.Scene {
         // Ajouter des drops à la collecte globale
         if (drop.type) {
             this.inventory.addItem(drop.category, drop.type, drop.quantity)
+            console.log(drop)
             this.inventory.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
+            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}`);
             socket.emit('collectDrop', id);
         } else {
             console.log(`drop ${drop.type} non définie.`);
