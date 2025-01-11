@@ -31,13 +31,13 @@ export default class Inventory {
             ironPickaxe: new Craftable("Tool", "ironPickaxe", 1, { ironIngot: 3, stick: 2}),
         };
         this.tools = {
-            woodenPickaxe: new Tool('woodenPickaxe', 1, 60, 20, 3, 2),
-            stonePickaxe: new Tool('stonePickaxe', 1, 45, 90, 4, 3),
-            woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
-            stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
-            ironSword: new Tool('ironSword', 1, 90, 70, 0, 10),
-            ironAxe: new Tool('ironAxe', 1, 70, 90, 8, 5),
-            ironPickaxe: new Tool('stonePickaxe', 1, 45, 90, 8, 5)
+            woodenPickaxe: new Tool('woodenPickaxe', 60, 20, 3, 2),
+            stonePickaxe: new Tool('stonePickaxe', 45, 90, 4, 3),
+            woodenAxe: new Tool('woodenAxe', 30, 60, 2, 2),
+            stoneAxe: new Tool('stoneAxe', 70, 90, 4, 3),
+            ironSword: new Tool('ironSword', 90, 70, 0, 10),
+            ironAxe: new Tool('ironAxe', 70, 90, 8, 5),
+            ironPickaxe: new Tool('stonePickaxe', 45, 90, 8, 5)
         };
         this.foods = {
             meat: { type: 'meat', value: 20},
@@ -77,6 +77,7 @@ export default class Inventory {
                 }
                 // Ajouter l'outil dans un nouveau slot
                 this.inventory[`${type}-${slot}`] = { item: this.tools[type], slot: slot };
+                this.inventory[`${type}-${slot}`].item.quantity = 1;
                 this.slots[slot] = 1;
             }
         } else {
@@ -102,6 +103,7 @@ export default class Inventory {
                 };
             } else if (category === "Tool") {
                 this.inventory[type] = { item: this.tools[type], slot: slot };
+                this.inventory[type].item.quantity = 1;
             }
     
             // Marquer le slot comme occupé
@@ -113,18 +115,44 @@ export default class Inventory {
     }
     
 
-    removeItem(type, quantity) {
-        if (this.inventory[type] && this.inventory[type].item.quantity >= quantity) {
-            this.inventory[type].item.quantity -= quantity;
-        } else {
-            console.log(`${type} introuvable ou quantité insuffisante.`);
+    removeItem(slotIndex, quantity) {
+        if (this.slots[slotIndex] === 0) {
+            console.log(`Le slot ${slotIndex} est vide.`);
+            return;
+        }
+    
+        const itemKey = Object.keys(this.inventory).find(key => this.inventory[key].slot === slotIndex);
+        
+        if (!itemKey) {
+            console.log(`Aucun objet trouvé dans le slot ${slotIndex}.`);
+            return;
+        }
+    
+        const item = this.inventory[itemKey];
+        console.log(item);
+    
+        if(item.item.category != "Tool"){
+            if (item.item.quantity >= quantity) {
+                item.item.quantity -= quantity;
+                console.log(`${quantity} ${item.item.type} retiré(s) du slot ${slotIndex}.`);
+            } else {
+                console.log(`Quantité insuffisante dans le slot ${slotIndex}. Suppression de tous les ${item.item.quantity} restants.`);
+                quantity = item.item.quantity;
+                item.item.quantity = 0;
+            }
         }
 
-        if (this.inventory[type] && this.inventory[type].item.quantity <= 0) {
-            delete this.inventory[type];
+        // Si la quantité atteint 0, on supprime l'élément
+        if (item.item.quantity <= 0 || item.item.category == "Tool") {
+            delete this.inventory[itemKey];
+            this.slots[slotIndex] = 0; // Libère le slot
+            console.log(`Slot ${slotIndex} maintenant vide.`);
         }
+    
+        // Déclenche un événement pour mettre à jour l'interface utilisateur ou d'autres systèmes
         this.triggerUpdate();
     }
+    
 
     hasItem(type, quantity) {
         return this.inventory[type] && this.inventory[type].item.quantity >= quantity;
@@ -190,6 +218,41 @@ export default class Inventory {
             socket.emit('createDrop', drop);
         });
     }
+
+    dropItem(itemSlot) {    
+        // Trouve la clé de l'item correspondant au slot
+        const itemKey = Object.keys(this.inventory).find(key => this.inventory[key].slot === itemSlot);
+    
+        if (!itemKey) {
+            console.log(`Aucun objet trouvé dans le slot ${itemSlot}`);
+            return;
+        }
+    
+        const item = this.inventory[itemKey];
+   
+        // Coordonnées pour l'objet à déposer
+        const x = this.scene.player.x;
+        const y = this.scene.player.y;
+        const displayHeight = this.scene.player.displayHeight;
+        const displayWidth = this.scene.player.displayWidth;
+    
+        // Création des données de l'objet à déposer
+        const drop = {
+            category: item.item.category,
+            type: item.item.type,
+            quantity: item.item.quantity,
+            x: x + displayWidth / 2 + Phaser.Math.Between(20, 32),
+            y: y + displayHeight / 2 + Phaser.Math.Between(-32, 32),
+        };    
+        // Émettre l'événement pour créer le drop
+        socket.emit('createDrop', drop);
+        console.log("inventory : ",this.inventory)
+    
+        // Appelle removeItem pour mettre à jour l'inventaire
+        this.removeItem(itemSlot, item.item.quantity);
+    }
+    
+    
     
     equipItem(key){
         this.scene.player.equipTool(this.inventory[key].item);
