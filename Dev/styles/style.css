@@ -10,7 +10,7 @@
 
 html, body {
   height: 100%;
-  background-image: url('./img/Fond-Game.png');
+  background-image: url('../img/Fond-Game.png');
   display: block;
   width: 100%;
 }

@@ -11,23 +11,38 @@
     <header>
         <div class="img-head">
             <a href="#"><img src="./img/Logo.webp" alt="Logo" class="logo"/></a>
-            <h1>Bienvenue dans <span class="game-title">Survie.io</span>!</h1>
+            <nav>
+                <ul class="menu">
+                    <li><a href="./pages/game.html">Jouer</a></li>
+                    <li><a href="./pages/histoire.html">Histoire</a></li>
+                    <li><a class="currentPage" href="#">Accueil</a></li>
+                    <li><a href="./pages/classement.html">Classement</a></li>
+                    <li><a href="./pages/contact.html">Contact</a></li>
+                </ul>
+            </nav>
             <img src="./img/logo-user.jpg" alt="Logo-user" class="logo-user"/>
         </div>
     </header>
 
     <main>
-        <section id="menu-accueil">
-            <nav class="accueil">
-                <ul class="menu-accueil">
-                    <li><a href="./pages/game.html">Jouer</a></li>
-                    <li><a href="./pages/histoire.html">Histoire</a></li>
-                    <li><a href="./pages/classement.html">Classement</a></li>
-                    <li><a href="./pages/contact.html">Contact</a></li>
-                </ul>
-            </nav>
-        </section>        
-
+        <h1>Bienvenue dans <span class="game-title">Survie.io</span>!</h1>
+        <section class="accueilJouer">
+            <p>Un jeu de survie palpitant où seule votre stratégie vous permettra de rester en vie !</p>
+            <button onclick="location.href='game.html'" class="play-button">Jouer Maintenant</button>
+        </section>
+    
+        <section class="story-preview">
+            <h2>Découvrez l'Histoire</h2>
+            <p>Plongez dans un monde hostile où chaque décision compte. Préparez-vous à survivre</p>
+            <a href="./pages/histoire.html" class="btn-link">En savoir plus</a>
+        </section>
+    
+        <section class="ranking-preview">
+            <h2>Top Joueurs</h2>
+            <p>Qui dominera les classements ? Découvrez les meilleurs survivants !</p>
+            <a href="./pages/classement.html" class="btn-link">Voir le Classement</a>
+        </section>    
+        
         <section id="projet">
             <h2>Projet BRDGame</h2>
             <p>Projet de SAE du semestre 5 du BUT Informatique à l’IUT d’Amiens de (Liam Target, Justin Largilliere, 
