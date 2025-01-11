@@ -332,7 +332,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if(this.equippedTool.value && this.equippedTool.quantity > 0){
       this.foodometer.addHealth(this.equippedTool.value);
       this.equippedTool.quantity--;
-      this.scene.inventory.removeItem(this.equippedTool.type, 1)
+      this.scene.inventory.playerEat(this.equippedTool.type, 1);
     }
 
     if(this.equippedTool.quantity == 0){
