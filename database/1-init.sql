@@ -26,19 +26,19 @@ CREATE TABLE Ressources(
 
 CREATE TABLE Servers(
    id_server INT,
-   server_name VARCHAR(50),
+   name_server VARCHAR(50),
    PRIMARY KEY(id_server)
 );
 
 CREATE TABLE Shop(
    id_item INT,
-   item_name VARCHAR(100),
+   name_item VARCHAR(100),
    PRIMARY KEY(id_item)
 );
 
 CREATE TABLE Crafts(
    id_craft INT,
-   craft_name VARCHAR(50),
+   name_craft VARCHAR(50),
    quantity_out INT,
    PRIMARY KEY(id_craft)
 );
@@ -57,7 +57,7 @@ CREATE TABLE Parties(
 
 CREATE TABLE Ennemies(
    id_ennemies INT,
-   name VARCHAR(255),
+   name_ennemy VARCHAR(255),
    health_points INT,
    type VARCHAR(50),
    behavior VARCHAR(50),
@@ -79,7 +79,7 @@ CREATE TABLE Farmables(
 
 CREATE TABLE Armour(
    id_armour INT,
-   armour_name VARCHAR(50),
+   name_armour VARCHAR(50),
    is_craftable BOOLEAN,
    effect VARCHAR(50),
    resistance INT,
@@ -89,16 +89,16 @@ CREATE TABLE Armour(
    FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft)
 );
 
-CREATE TABLE WeaponsTools(
-   id_weapon INT,
-   weapon_name VARCHAR(50),
+CREATE TABLE Tools(
+   id_tool INT,
+   tool_name VARCHAR(50),
    is_craftable BOOLEAN,
    range_tool INT,
    angle INT,
    farmableDamage INT,
    attackDamage INT,
    id_craft INT NOT NULL,
-   PRIMARY KEY(id_weapon),
+   PRIMARY KEY(id_tool),
    UNIQUE(id_craft),
    FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft)
 );
@@ -153,13 +153,13 @@ CREATE TABLE dropTypeMobs(
    FOREIGN KEY(id_ennemies) REFERENCES Ennemies(id_ennemies)
 );
 
-CREATE TABLE CraftWeaponToolWithWeaponTool (
+CREATE TABLE CraftToolWithTool (
     id_craft INT NOT NULL,
-    id_weapon INT NOT NULL,
+    id_tool INT NOT NULL,
     quantity_needed INT NOT NULL,
-    PRIMARY KEY (id_craft, id_weapon),
+    PRIMARY KEY (id_craft, id_tool),
     FOREIGN KEY (id_craft) REFERENCES Crafts(id_craft),
-    FOREIGN KEY (id_weapon) REFERENCES WeaponsTools(id_weapon)
+    FOREIGN KEY (id_tool) REFERENCES toolsTools(id_tool)
 );
 
 CREATE TABLE CraftArmourWithArmour (
