@@ -1,5 +1,5 @@
 -- Serveurs
-INSERT INTO Servers (id_server, server_name)
+INSERT INTO Servers (id_server, name_server)
 VALUES
 (1, 'EU');
 
@@ -7,7 +7,6 @@ VALUES
 INSERT INTO Maps (id_map, map_name)
 VALUES
 (1, 'Infernal Abyss');
-
 
 -- Ressources
 INSERT INTO Ressources (id_ressource, ressource_name, category, value_food)
@@ -24,7 +23,6 @@ VALUES
 (10, 'goldIngot', 'Ressource', 0),
 (11, 'goldenApple', 'Food', 45);
 
-
 -- Farmable
 INSERT INTO Farmables (id_farmable, type, health_points)
 VALUES
@@ -32,7 +30,6 @@ VALUES
 (2, 'rock', 10),
 (3, 'ironOre', 10),
 (4, 'goldOre', 10);
-
 
 -- dropTypeFarm
 INSERT INTO dropTypeFarm (id_ressource, id_farmable)
@@ -44,14 +41,13 @@ VALUES
 (5, 1),  -- stick for tree
 (8, 1);  -- apple for tree
 
-
 -- Ennemis
-INSERT INTO Ennemies (id_ennemies, name, health_points, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
+INSERT INTO Ennemies (id_ennemies, name_ennemy, health_points, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
 VALUES
 (1, 'Boss', 200, 'Boss', 'Aggressive',  250, 400,  4000, NULL);
 
 -- Crafts
-INSERT INTO Crafts (id_craft, craft_name, quantity_out)
+INSERT INTO Crafts (id_craft, name_craft, quantity_out)
 VALUES
 (1, 'stick', 2),
 (2, 'plank', 4),
@@ -69,7 +65,7 @@ VALUES
 (14, 'clothTorso', 1);
 
 -- Armes et outils
-INSERT INTO WeaponsTools (id_weapon, weapon_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
+INSERT INTO Tools (id_tool, tool_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
 VALUES
 (1, 'woodenAxe', TRUE, 30, 60, 2, 2, 4),
 (2, 'woodenPickaxe', TRUE, 60, 20, 3, 2, 5),
@@ -80,12 +76,10 @@ VALUES
 (7, 'ironPickaxe', TRUE, 45, 90, 8, 5, 10),
 (8, 'goldOrnateSword', TRUE, 90, 70, 0, 15, 13);
 
-
--- Armour
-INSERT INTO Armour (id_armour, armour_name, is_craftable, effect, resistance, id_craft)
+-- Armures
+INSERT INTO Armour (id_armour, name_armour, is_craftable, effect, resistance, id_craft)
 VALUES
 (1, 'clothTorso', TRUE, '', 10, 14);
-
 
 -- CraftRessources
 INSERT INTO CraftRessources (id_ressource, id_craft, quantity_needed)
@@ -102,7 +96,7 @@ VALUES
 (5, 10, 2),
 (10, 13, 3);
 
--- CraftWeaponToolWithWeaponTool
-INSERT INTO CraftWeaponToolWithWeaponTool (id_weapon, id_craft, quantity_needed)
+-- CraftToolWithTool
+INSERT INTO CraftToolWithTool (id_craft, id_tool, quantity_needed)
 VALUES
-(5, 13, 1);
+(13, 5, 1);
