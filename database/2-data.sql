@@ -4,12 +4,12 @@ VALUES
 (1, 'EU');
 
 -- Cartes
-INSERT INTO Maps (id_map, map_name)
+INSERT INTO Maps (id_map, name_map)
 VALUES
 (1, 'Infernal Abyss');
 
 -- Ressources
-INSERT INTO Ressources (id_ressource, ressource_name, category, value_food)
+INSERT INTO Ressources (id_ressource, name_ressource, category, value_food)
 VALUES
 (1, 'wood', 'Ressource', 0),
 (2, 'stone', 'Ressource', 0),
@@ -42,7 +42,7 @@ VALUES
 (8, 1);  -- apple for tree
 
 -- Ennemis
-INSERT INTO Ennemies (id_ennemies, name_ennemy, health_points, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
+INSERT INTO Ennemies (id_ennemy, name_ennemy, health_points, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
 VALUES
 (1, 'Boss', 200, 'Boss', 'Aggressive',  250, 400,  4000, NULL);
 
@@ -65,7 +65,7 @@ VALUES
 (14, 'clothTorso', 1);
 
 -- Armes et outils
-INSERT INTO Tools (id_tool, tool_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
+INSERT INTO Tools (id_tool, name_tool, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
 VALUES
 (1, 'woodenAxe', TRUE, 30, 60, 2, 2, 4),
 (2, 'woodenPickaxe', TRUE, 60, 20, 3, 2, 5),

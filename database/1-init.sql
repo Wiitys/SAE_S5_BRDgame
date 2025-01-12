@@ -12,13 +12,13 @@ CREATE TABLE Players(
 
 CREATE TABLE Maps(
    id_map INT,
-   map_name VARCHAR(100),
+   name_map VARCHAR(100),
    PRIMARY KEY(id_map)
 );
 
 CREATE TABLE Ressources(
    id_ressource INT,
-   ressource_name VARCHAR(50),
+   name_ressource VARCHAR(50),
    category VARCHAR(50),
    value_food INT,
    PRIMARY KEY(id_ressource)
@@ -56,7 +56,7 @@ CREATE TABLE Parties(
 );
 
 CREATE TABLE Ennemies(
-   id_ennemies INT,
+   id_ennemy INT,
    name_ennemy VARCHAR(255),
    health_points INT,
    type VARCHAR(50),
@@ -91,7 +91,7 @@ CREATE TABLE Armour(
 
 CREATE TABLE Tools(
    id_tool INT,
-   tool_name VARCHAR(50),
+   name_tool VARCHAR(50),
    is_craftable BOOLEAN,
    range_tool INT,
    angle INT,
