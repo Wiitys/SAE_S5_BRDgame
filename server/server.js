@@ -53,7 +53,7 @@ setTimeout(() => {
 
     getFarmables();
     getCraftables();
-    getEnnemies();
+    getEnemies();
     getRessources();
     getTools();
     getArmours();
@@ -76,7 +76,7 @@ function queryDatabase(query) {
 
 let farmablesData = {};
 let craftablesData = {};
-let ennemiesData = {};
+let enemiesData = {};
 let armoursData = {};
 let ressourcesData = {};
 let toolsData = {};
@@ -93,8 +93,8 @@ async function getRessources() {
                 Ressources r;
         `);
 
-        results.forEach(resource => {
-            const { id_ressource, name_ressource, category, value_food } = resource;
+        results.forEach(ressource => {
+            const { id_ressource, name_ressource, category, value_food } = ressource;
 
             ressourcesData[id_ressource] = {
                 name: name_ressource,
@@ -103,13 +103,13 @@ async function getRessources() {
             };
         });
 
-        return resourcesData;
+        return ressourcesData;
     } catch (error) {
         console.error('Error fetching resources:', error);
     }
 }
 
-async function getEnnemies() {
+async function getEnemies() {
     try {
         const results = await queryDatabase(`
             SELECT 
@@ -129,10 +129,10 @@ async function getEnnemies() {
                 Ressources r ON e.id_ressource = r.id_ressource;
         `);
 
-        results.forEach(ennemy => {
-            const { name_ennemy, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
+        results.forEach(enemy => {
+            const { name_enemy, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = enemy;
             if(!enne)
-            ennemiesData[name_ennemy] = {
+            enemiesData[name_enemy] = {
                 hp : hp,
                 type : type,
                 behavior : behavior,
@@ -142,13 +142,13 @@ async function getEnnemies() {
                 drops: []
             };
 
-            ennemiesData[name].drops.push({ dropType, dropCategory, dropValue });
+            enemiesData[name_enemy].drops.push({ dropType, dropCategory, dropValue });
         });
 
 
-        return ennemiesData;
+        return enemiesData;
     } catch (error) {
-        console.error('Error fetching ennemies:', error);
+        console.error('Error fetching enemies:', error);
     }
 }
 
@@ -206,7 +206,7 @@ async function getCraftables() {
                     WHEN a.name_armour IS NOT NULL THEN 'Armour'
                     ELSE 'Ressource'
                 END AS category,
-                c.craft_name AS name,
+                c.name_craft AS name,
                 c.quantity_out AS quantity_out,
                 CONCAT(
                     '{',
@@ -227,8 +227,26 @@ async function getCraftables() {
                         CONCAT(', ',
                             GROUP_CONCAT(
                                 CASE
-                                    WHEN wt_c.name_tool IS NOT NULL THEN 
-                                        CONCAT(wt_c.name_tool, ': ', ctwt.quantity_needed)
+                                    WHEN t_c.name_tool IS NOT NULL THEN 
+                                        CONCAT(t_c.name_tool, ': ', ctwt.quantity_needed)
+                                    ELSE NULL
+                                END
+                                SEPARATOR ', '
+                            )
+                        ),
+                        ''
+                    ),
+                    IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM CraftArmourWithArmour sub_cawa
+                            WHERE sub_cawa.id_craft = c.id_craft
+                        ),
+                        CONCAT(', ',
+                            GROUP_CONCAT(
+                                CASE
+                                    WHEN a_c.name_tool IS NOT NULL THEN 
+                                        CONCAT(a_c.name_tool, ': ', cawa.quantity_needed)
                                     ELSE NULL
                                 END
                                 SEPARATOR ', '
@@ -246,6 +264,9 @@ async function getCraftables() {
             LEFT JOIN Tools t ON c.id_craft = t.id_craft AND t.is_craftable = TRUE
             LEFT JOIN Tools t_c ON t_c.id_tool = ctwt.id_tool AND t.is_craftable = TRUE
             LEFT JOIN Armour a ON c.id_craft = a.id_craft AND a.is_craftable = TRUE
+            LEFT JOIN Armour a_c ON c.id_craft = a_c.id_craft AND a_c.is_craftable = TRUE
+            LEFT JOIN CraftArmourWithArmour cawa.id_armour = a.id_armour
+            LEFT JOIN CraftArmourWithArmour cawa.id_craft = c.id_craft
             GROUP BY c.id_craft, category, c.craft_name, c.quantity_out
             HAVING recipe IS NOT NULL;
         `);

@@ -24,7 +24,7 @@ VALUES
 (11, 'goldenApple', 'Food', 45);
 
 -- Farmable
-INSERT INTO Farmables (id_farmable, type, health_points)
+INSERT INTO Farmables (id_farmable, type, healthPoints)
 VALUES
 (1, 'tree', 10),
 (2, 'rock', 10),
@@ -42,7 +42,7 @@ VALUES
 (8, 1);  -- apple for tree
 
 -- Ennemis
-INSERT INTO Ennemies (id_ennemy, name_ennemy, health_points, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
+INSERT INTO Enemies (id_enemy, name_enemy, healthPoints, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
 VALUES
 (1, 'Boss', 200, 'Boss', 'Aggressive',  250, 400,  4000, NULL);
 

@@ -55,9 +55,9 @@ CREATE TABLE Parties(
    FOREIGN KEY(id_server) REFERENCES Servers(id_server)
 );
 
-CREATE TABLE Ennemies(
-   id_ennemy INT,
-   name_ennemy VARCHAR(255),
+CREATE TABLE Enemies(
+   id_enemy INT,
+   name_enemy VARCHAR(255),
    healthPoints INT,
    type VARCHAR(50),
    behavior VARCHAR(50),
@@ -65,15 +65,15 @@ CREATE TABLE Ennemies(
    searchRange INT,
    actionDelay VARCHAR(50),
    id_ressource INT,
-   PRIMARY KEY(id_ennemy),
-   UNIQUE(id_ennemy),
+   PRIMARY KEY(id_enemy),
+   UNIQUE(id_enemy),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
 CREATE TABLE Farmables(
    id_farmable INT NOT NULL,
    type VARCHAR(50),
-   health_points INT,
+   healthPoints INT,
    PRIMARY KEY(id_farmable)
 );
 
@@ -147,10 +147,10 @@ CREATE TABLE dropTypeFarm(
 
 CREATE TABLE dropTypeMobs(
    id_ressource INT,
-   id_ennemies INT,
-   PRIMARY KEY(id_ressource, id_ennemies),
+   id_enemies INT,
+   PRIMARY KEY(id_ressource, id_enemy),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
-   FOREIGN KEY(id_ennemy) REFERENCES Ennemies(id_ennemy)
+   FOREIGN KEY(id_enemy) REFERENCES enemies(id_enemy)
 );
 
 CREATE TABLE CraftToolWithTool (
