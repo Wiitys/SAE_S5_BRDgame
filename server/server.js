@@ -55,7 +55,7 @@ setTimeout(() => {
     getCraftables();
     getEnnemies();
     getRessources();
-    getWeaponsTools();
+    getTools();
     getArmours();
     
 }, 10000);
@@ -79,14 +79,14 @@ let craftablesData = {};
 let ennemiesData = {};
 let armoursData = {};
 let ressourcesData = {};
-let weaponsToolsData = {};
+let toolsData = {};
 
 async function getRessources() {
     try {
         const results = await queryDatabase(`
             SELECT 
                 r.id_ressource,
-                r.ressource_name,
+                r.name_ressource,
                 r.category,
                 r.value_food
             FROM 
@@ -94,10 +94,10 @@ async function getRessources() {
         `);
 
         results.forEach(resource => {
-            const { id_ressource, ressource_name, category, value_food } = resource;
+            const { id_ressource, name_ressource, category, value_food } = resource;
 
             ressourcesData[id_ressource] = {
-                name: ressource_name,
+                name: name_ressource,
                 category : category,
                 valueFood: value_food
             };
@@ -113,7 +113,7 @@ async function getEnnemies() {
     try {
         const results = await queryDatabase(`
             SELECT 
-                e.name,
+                e.name_ennemy,
                 e.health_points AS hp,
                 e.type,
                 e.behavior,
@@ -121,7 +121,7 @@ async function getEnnemies() {
                 e.searchRange,
                 e.actionDelay,
                 r.category AS dropCategory,
-                r.ressource_name AS dropType,
+                r.name_ressource AS dropType,
                 r.value_food AS dropValue
             FROM 
                 Ennemies e
@@ -130,9 +130,9 @@ async function getEnnemies() {
         `);
 
         results.forEach(ennemy => {
-            const { name, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
+            const { name_ennemy, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
             if(!enne)
-            ennemiesData[name] = {
+            ennemiesData[name_ennemy] = {
                 hp : hp,
                 type : type,
                 behavior : behavior,
@@ -162,7 +162,7 @@ async function getFarmables() {
                 f.type, 
                 f.health_points as hp,
                 r.category as dropCategory,  
-                r.ressource_name as dropType,
+                r.name_ressource as dropType,
                 r.value_food as dropValue
             FROM 
                 Farmables f
@@ -202,8 +202,8 @@ async function getCraftables() {
             SELECT 
                 c.id_craft AS id,
                 CASE
-                    WHEN wt.weapon_name IS NOT NULL THEN 'Tool'
-                    WHEN a.armour_name IS NOT NULL THEN 'Armour'
+                    WHEN t.name_tool IS NOT NULL THEN 'Tool'
+                    WHEN a.name_armour IS NOT NULL THEN 'Armour'
                     ELSE 'Ressource'
                 END AS category,
                 c.craft_name AS name,
@@ -212,8 +212,8 @@ async function getCraftables() {
                     '{',
                     GROUP_CONCAT(
                         CASE
-                            WHEN cr.ressource_name IS NOT NULL THEN 
-                                CONCAT(cr.ressource_name, ': ', cr_c.quantity_needed)
+                            WHEN cr.name_ressource IS NOT NULL THEN 
+                                CONCAT(cr.name_ressource, ': ', cr_c.quantity_needed)
                             ELSE NULL
                         END
                         SEPARATOR ', '
@@ -221,14 +221,14 @@ async function getCraftables() {
                     IF(
                         EXISTS (
                             SELECT 1
-                            FROM CraftWeaponToolWithWeaponTool sub_wtw
-                            WHERE sub_wtw.id_craft = c.id_craft
+                            FROM CraftToolWithTool sub_ctwt
+                            WHERE sub_ctwt.id_craft = c.id_craft
                         ),
                         CONCAT(', ',
                             GROUP_CONCAT(
                                 CASE
-                                    WHEN wt_c.weapon_name IS NOT NULL THEN 
-                                        CONCAT(wt_c.weapon_name, ': ', wtw.quantity_needed)
+                                    WHEN wt_c.name_tool IS NOT NULL THEN 
+                                        CONCAT(wt_c.name_tool, ': ', ctwt.quantity_needed)
                                     ELSE NULL
                                 END
                                 SEPARATOR ', '
@@ -242,9 +242,9 @@ async function getCraftables() {
             LEFT JOIN CraftRessources cr_c ON c.id_craft = cr_c.id_craft
             LEFT JOIN Ressources cr ON cr_c.id_ressource = cr.id_ressource
             LEFT JOIN Ressources r ON c.id_craft = r.id_ressource
-            LEFT JOIN CraftWeaponToolWithWeaponTool wtw ON c.id_craft = wtw.id_craft
-            LEFT JOIN WeaponsTools wt ON c.id_craft = wt.id_craft AND wt.is_craftable = TRUE
-            LEFT JOIN WeaponsTools wt_c ON wt_c.id_weapon = wtw.id_weapon AND wt.is_craftable = TRUE
+            LEFT JOIN CraftToolWithTool ctwt ON c.id_craft = ctwt.id_craft
+            LEFT JOIN Tools t ON c.id_craft = t.id_craft AND t.is_craftable = TRUE
+            LEFT JOIN Tools t_c ON t_c.id_tool = ctwt.id_tool AND t.is_craftable = TRUE
             LEFT JOIN Armour a ON c.id_craft = a.id_craft AND a.is_craftable = TRUE
             GROUP BY c.id_craft, category, c.craft_name, c.quantity_out
             HAVING recipe IS NOT NULL;
@@ -270,41 +270,41 @@ async function getCraftables() {
 }
 
 
-async function getWeaponsTools() {
+async function getTools() {
     try {
         const results = await queryDatabase(`
             SELECT 
-                wt.id_weapon,
-                wt.weapon_name,
-                wt.is_craftable,
-                wt.range_tool,
-                wt.angle,
-                wt.farmableDamage,
-                wt.attackDamage,
+                t.id_tool,
+                t.name_tool,
+                t.is_craftable,
+                t.range_tool,
+                t.angle,
+                t.farmableDamage,
+                t.attackDamage,
                 c.id_craft
             FROM 
-                WeaponsTools wt
+                Tools wt
             JOIN 
-                Crafts c ON wt.id_craft = c.id_craft;
+                Crafts c ON t.id_craft = c.id_craft;
         `);
 
-        results.forEach(weapon => {
-            const { id_weapon, weapon_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft } = weapon;
+        results.forEach(tool => {
+            const { id_tool, name_tool, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft } = tool;
 
-            weaponsToolsData[id_weapon] = {
-                name: weapon_name,
+            toolsData[id_tool] = {
+                name: name_tool,
                 isCraftable: is_craftable,
                 rangeTool: range_tool,
-                angle,
-                farmableDamage,
-                attackDamage,
+                angle : angle,
+                farmableDamage : farmableDamage,
+                attackDamage : attackDamage,
                 craftId: id_craft
             };
         });
 
-        return weaponsToolsData;
+        return toolsData;
     } catch (error) {
-        console.error('Error fetching weapons/tools:', error);
+        console.error('Error fetching tools:', error);
     }
 }
 
@@ -313,7 +313,7 @@ async function getArmours() {
         const results = await queryDatabase(`
             SELECT 
                 a.id_armour,
-                a.armour_name,
+                a.name_armour,
                 a.is_craftable,
                 a.effect,
                 a.resistance,
@@ -325,13 +325,13 @@ async function getArmours() {
         `);
 
         results.forEach(armour => {
-            const { id_armour, armour_name, is_craftable, effect, resistance, id_craft } = armour;
+            const { id_armour, name_armour, is_craftable, effect, resistance, id_craft } = armour;
 
             armoursData[id_armour] = {
-                name: armour_name,
+                name: name_armour,
                 isCraftable: is_craftable,
-                effect,
-                resistance,
+                effect : effect,
+                resistance : resistance,
                 craftId: id_craft
             };
         });
