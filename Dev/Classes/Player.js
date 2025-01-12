@@ -99,7 +99,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.anims.create({
       key: 'slash',
-      frames: this.anims.generateFrameNumbers('sword_slash', { start: 0, end: 2 }),
+      frames: this.anims.generateFrameNumbers('sword_slash', { start: 0, end: 3 }),
       frameRate: 10,
       repeat: 0
   });
