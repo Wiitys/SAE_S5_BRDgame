@@ -39,13 +39,14 @@ CREATE TABLE Shop(
 CREATE TABLE Crafts(
    id_craft INT,
    craft_name VARCHAR(50),
+   quantity_out INT,
    PRIMARY KEY(id_craft)
 );
 
 CREATE TABLE Parties(
    id_party INT,
    name_party VARCHAR(50),
-   is_private LOGICAL,
+   is_private BOOLEAN,
    password VARCHAR(25),
    id_map INT NOT NULL,
    id_server INT NOT NULL,
@@ -63,20 +64,23 @@ CREATE TABLE Ennemies(
    attackRange INT,
    searchRange INT,
    actionDelay VARCHAR(50),
-   PRIMARY KEY(id_ennemies)
+   id_ressource INT,
+   PRIMARY KEY(id_ennemies),
+   UNIQUE(id_ennemies),
+   FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
 CREATE TABLE Farmables(
-   id_farmable INT,
+   id_farmable INT NOT NULL,
    type VARCHAR(50),
-   health_point INT,
+   health_points INT,
    PRIMARY KEY(id_farmable)
 );
 
 CREATE TABLE Armour(
    id_armour INT,
    armour_name VARCHAR(50),
-   is_craftable LOGICAL,
+   is_craftable BOOLEAN,
    effect VARCHAR(50),
    resistance INT,
    id_craft INT NOT NULL,
@@ -88,7 +92,7 @@ CREATE TABLE Armour(
 CREATE TABLE WeaponsTools(
    id_weapon INT,
    weapon_name VARCHAR(50),
-   is_craftable LOGICAL,
+   is_craftable BOOLEAN,
    range_tool INT,
    angle INT,
    farmableDamage INT,
@@ -119,12 +123,10 @@ CREATE TABLE FriendPlayer(
 CREATE TABLE CraftRessources(
    id_ressource INT,
    id_craft INT,
-   id_craft_1 INT,
    quantity_needed INT,
-   PRIMARY KEY(id_ressource, id_craft, id_craft_1),
+   PRIMARY KEY(id_ressource, id_craft),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
-   FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft),
-   FOREIGN KEY(id_craft_1) REFERENCES Crafts(id_craft)
+   FOREIGN KEY(id_craft) REFERENCES Crafts(id_craft)
 );
 
 CREATE TABLE PlayersParty(
@@ -149,4 +151,22 @@ CREATE TABLE dropTypeMobs(
    PRIMARY KEY(id_ressource, id_ennemies),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
    FOREIGN KEY(id_ennemies) REFERENCES Ennemies(id_ennemies)
+);
+
+CREATE TABLE CraftWeaponToolWithWeaponTool (
+    id_craft INT NOT NULL,
+    id_weapon INT NOT NULL,
+    quantity_needed INT NOT NULL,
+    PRIMARY KEY (id_craft, id_weapon),
+    FOREIGN KEY (id_craft) REFERENCES Crafts(id_craft),
+    FOREIGN KEY (id_weapon) REFERENCES WeaponsTools(id_weapon)
+);
+
+CREATE TABLE CraftArmourWithArmour (
+    id_craft INT NOT NULL,
+    id_armour INT NOT NULL,
+    quantity_needed INT NOT NULL,
+    PRIMARY KEY (id_craft, id_armour),
+    FOREIGN KEY (id_craft) REFERENCES Crafts(id_craft),
+    FOREIGN KEY (id_armour) REFERENCES Armour(id_armour)
 );
