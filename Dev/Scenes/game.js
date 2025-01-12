@@ -92,9 +92,6 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.addItem("Tool", "stoneAxe", 1, 0);
         this.inventory.addItem("Tool", "woodenPickaxe", 1, 0);
-        
-        this.inventory.createUI();
-        this.inventory.updateInventoryText();
     }
     
     update() {

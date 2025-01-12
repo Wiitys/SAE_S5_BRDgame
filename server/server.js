@@ -51,8 +51,8 @@ setTimeout(() => {
             console.error('Erreur de connexion à la base de données :', err);
         });
 
-    // Appel de la fonction pour récupérer les farmables
     getFarmables();
+    getCraftables();
     
 }, 10000);
 
@@ -71,8 +71,8 @@ function queryDatabase(query) {
     });
 }
 
-// Déclaration de la variable farmablesData
 let farmablesData = {};
+let craftablesData = {};
 
 async function getFarmables() {
     try {
@@ -116,7 +116,76 @@ async function getFarmables() {
     }
 }
 
+async function getCraftables() {
+    try {
+        // Attendre que la promesse renvoyée par queryDatabase se résolve
+        const results = await queryDatabase(`
+            SELECT 
+                c.id_craft AS id,
+                CASE
+                    WHEN wt.weapon_name IS NOT NULL THEN 'Tool'
+                    ELSE 'Ressource'
+                END AS category,
+                c.craft_name AS name,
+                c.quantity_out AS quantity_out,
+                CONCAT(
+                    '{',
+                    GROUP_CONCAT(
+                        CASE
+                            WHEN cr.ressource_name IS NOT NULL THEN 
+                                CONCAT(cr.ressource_name, ': ', cr_c.quantity_needed)
+                            ELSE NULL
+                        END
+                        SEPARATOR ', '
+                    ),
+                    IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM CraftWeaponToolWithWeaponTool sub_wtw
+                            WHERE sub_wtw.id_craft = c.id_craft
+                        ),
+                        CONCAT(', ',
+                            GROUP_CONCAT(
+                                CASE
+                                    WHEN wt_c.weapon_name IS NOT NULL THEN 
+                                        CONCAT(wt_c.weapon_name, ': ', wtw.quantity_needed)
+                                    ELSE NULL
+                                END
+                                SEPARATOR ', '
+                            )
+                        ),
+                        ''
+                    ),
+                    '}'
+                ) AS recipe
+            FROM Crafts c
+            LEFT JOIN CraftRessources cr_c ON c.id_craft = cr_c.id_craft
+            LEFT JOIN Ressources cr ON cr_c.id_ressource = cr.id_ressource
+            LEFT JOIN Ressources r ON c.id_craft = r.id_ressource
+            LEFT JOIN CraftWeaponToolWithWeaponTool wtw ON c.id_craft = wtw.id_craft
+            LEFT JOIN WeaponsTools wt ON c.id_craft = wt.id_craft AND wt.is_craftable = TRUE
+            LEFT JOIN WeaponsTools wt_c ON wt_c.id_weapon = wtw.id_weapon AND wt.is_craftable = TRUE
+            GROUP BY c.id_craft, category, c.craft_name, c.quantity_out
+            HAVING recipe IS NOT NULL;
+        `);
+        // Parcours des résultats et regroupement des données
+        results.forEach(craftable => {
+            const { id, category, name, quantity_out, recipe } = craftable;
 
+            // Si le farmable n'existe pas encore dans craftablesData, on le crée
+            if (!craftablesData[name]) {
+                craftablesData[name] = {
+                    category: category,
+                    type: name,
+                    quantity: quantity_out,
+                    recipe: recipe
+                };
+            }
+        });
+    } catch (err) {
+        console.error('Erreur lors de la récupération des craftables :', err);
+    }
+}
 
 
 const ioServer = new socketIO.Server(server, {
@@ -142,6 +211,11 @@ ioServer.on('connection', (socket) => {
     
     console.log(`A player connected: ${socket.id}`);
     
+    socket.on('getCraftables', () => {
+        console.log(craftablesData)
+        socket.emit('getCraftables', craftablesData);
+    })
+
     socket.on('updatePlayers', function(data){
         for(player of players) {
             if(player.id == socket.id) {
