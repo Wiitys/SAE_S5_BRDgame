@@ -160,7 +160,7 @@ async function getFarmables() {
             SELECT 
                 f.id_farmable,
                 f.type, 
-                f.health_points as hp,
+                f.healthPoints as hp,
                 r.category as dropCategory,  
                 r.name_ressource as dropType,
                 r.value_food as dropValue
