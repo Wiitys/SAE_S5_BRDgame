@@ -114,7 +114,7 @@ async function getEnnemies() {
         const results = await queryDatabase(`
             SELECT 
                 e.name_ennemy,
-                e.health_points AS hp,
+                e.healthPoints AS hp,
                 e.type,
                 e.behavior,
                 e.attackRange,

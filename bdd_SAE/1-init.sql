@@ -58,15 +58,15 @@ CREATE TABLE Parties(
 CREATE TABLE Ennemies(
    id_ennemy INT,
    name_ennemy VARCHAR(255),
-   health_points INT,
+   healthPoints INT,
    type VARCHAR(50),
    behavior VARCHAR(50),
    attackRange INT,
    searchRange INT,
    actionDelay VARCHAR(50),
    id_ressource INT,
-   PRIMARY KEY(id_ennemies),
-   UNIQUE(id_ennemies),
+   PRIMARY KEY(id_ennemy),
+   UNIQUE(id_ennemy),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
@@ -150,7 +150,7 @@ CREATE TABLE dropTypeMobs(
    id_ennemies INT,
    PRIMARY KEY(id_ressource, id_ennemies),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
-   FOREIGN KEY(id_ennemies) REFERENCES Ennemies(id_ennemies)
+   FOREIGN KEY(id_ennemy) REFERENCES Ennemies(id_ennemy)
 );
 
 CREATE TABLE CraftToolWithTool (
