@@ -41,24 +41,33 @@ const db = mysql.createConnection({
     database: 'game_database',
 });
 
-setTimeout(() => {
-    // Connexion à la base de données
+connectToDatabase();
+
+// Fonction pour tenter la connexion à la base de données
+function connectToDatabase(retries = 5, delay = 5000) {
     db.promise().connect()
         .then(() => {
             console.log('Connecté à la base de données MySQL');
+            // Récupération des données
+            getFarmables();
+            getCraftables();
+            getEnemies();
+            getRessources();
+            getTools();
+            getArmours();
         })
         .catch((err) => {
             console.error('Erreur de connexion à la base de données :', err);
-        });
 
-    getFarmables();
-    getCraftables();
-    getEnemies();
-    getRessources();
-    getTools();
-    getArmours();
-    
-}, 10000);
+            // Si des tentatives sont encore possibles, on réessaye
+            if (retries > 0) {
+                console.log(`Nouvelle tentative dans ${delay / 1000} secondes... (${retries} essais restants)`);
+                setTimeout(() => connectToDatabase(retries - 1, delay), delay);
+            } else {
+                console.error('Impossible de se connecter après plusieurs tentatives. Arrêt.');
+            }
+        });
+}
 
 // Fonction générique pour exécuter des requêtes
 function queryDatabase(query) {
@@ -103,6 +112,8 @@ async function getRessources() {
             };
         });
 
+        console.log(ressourcesData);
+
         return ressourcesData;
     } catch (error) {
         console.error('Error fetching resources:', error);
@@ -113,7 +124,7 @@ async function getEnemies() {
     try {
         const results = await queryDatabase(`
             SELECT 
-                e.name_ennemy,
+                e.name_enemy,
                 e.healthPoints AS hp,
                 e.type,
                 e.behavior,
@@ -124,27 +135,29 @@ async function getEnemies() {
                 r.name_ressource AS dropType,
                 r.value_food AS dropValue
             FROM 
-                Ennemies e
+                Enemies e
             LEFT JOIN 
                 Ressources r ON e.id_ressource = r.id_ressource;
         `);
 
         results.forEach(enemy => {
             const { name_enemy, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = enemy;
-            if(!enne)
-            enemiesData[name_enemy] = {
-                hp : hp,
-                type : type,
-                behavior : behavior,
-                attackRange : attackRange,
-                searchRange : searchRange,
-                actionDelay : actionDelay,
-                drops: []
-            };
-
+            if(!enemiesData[name_enemy]){
+                enemiesData[name_enemy] = {
+                    hp : hp,
+                    type : type,
+                    behavior : behavior,
+                    attackRange : attackRange,
+                    searchRange : searchRange,
+                    actionDelay : actionDelay,
+                    drops: []
+                };
+            }
+            
             enemiesData[name_enemy].drops.push({ dropType, dropCategory, dropValue });
         });
 
+        console.log(enemiesData);
 
         return enemiesData;
     } catch (error) {
@@ -188,6 +201,8 @@ async function getFarmables() {
             // Ajouter le drop au tableau "drops" pour ce farmable
             farmablesData[id_farmable].drops.push({ dropType, dropCategory, dropValue });
         });
+
+        console.log(farmablesData);
 
         createInitialFarmables()
     } catch (err) {
@@ -245,8 +260,8 @@ async function getCraftables() {
                         CONCAT(', ',
                             GROUP_CONCAT(
                                 CASE
-                                    WHEN a_c.name_tool IS NOT NULL THEN 
-                                        CONCAT(a_c.name_tool, ': ', cawa.quantity_needed)
+                                    WHEN a_c.name_armour IS NOT NULL THEN 
+                                        CONCAT(a_c.name_armour, ': ', cawa.quantity_needed)
                                     ELSE NULL
                                 END
                                 SEPARATOR ', '
@@ -263,11 +278,10 @@ async function getCraftables() {
             LEFT JOIN CraftToolWithTool ctwt ON c.id_craft = ctwt.id_craft
             LEFT JOIN Tools t ON c.id_craft = t.id_craft AND t.is_craftable = TRUE
             LEFT JOIN Tools t_c ON t_c.id_tool = ctwt.id_tool AND t.is_craftable = TRUE
+            LEFT JOIN CraftArmourWithArmour cawa ON cawa.id_craft = c.id_craft
             LEFT JOIN Armour a ON c.id_craft = a.id_craft AND a.is_craftable = TRUE
-            LEFT JOIN Armour a_c ON c.id_craft = a_c.id_craft AND a_c.is_craftable = TRUE
-            LEFT JOIN CraftArmourWithArmour cawa.id_armour = a.id_armour
-            LEFT JOIN CraftArmourWithArmour cawa.id_craft = c.id_craft
-            GROUP BY c.id_craft, category, c.craft_name, c.quantity_out
+            LEFT JOIN Armour a_c ON a_c.id_armour = cawa.id_armour AND a_c.is_craftable = TRUE
+            GROUP BY c.id_craft, category, c.name_craft, c.quantity_out
             HAVING recipe IS NOT NULL;
         `);
 
@@ -285,6 +299,9 @@ async function getCraftables() {
                 };
             }
         });
+
+        console.log(craftablesData);
+
     } catch (err) {
         console.error('Erreur lors de la récupération des craftables :', err);
     }
@@ -304,7 +321,7 @@ async function getTools() {
                 t.attackDamage,
                 c.id_craft
             FROM 
-                Tools wt
+                Tools t
             JOIN 
                 Crafts c ON t.id_craft = c.id_craft;
         `);
@@ -322,6 +339,8 @@ async function getTools() {
                 craftId: id_craft
             };
         });
+
+        console.log(toolsData);
 
         return toolsData;
     } catch (error) {
@@ -356,6 +375,8 @@ async function getArmours() {
                 craftId: id_craft
             };
         });
+
+        console.log(armoursData);
 
         return armoursData;
     } catch (error) {

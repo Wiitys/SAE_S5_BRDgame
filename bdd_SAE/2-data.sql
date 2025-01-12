@@ -62,7 +62,7 @@ VALUES
 (11, 'goldIngot', 1),
 (12, 'goldenApple', 1),
 (13, 'goldOrnateSword', 1),
-(14, 'clothTorso', 1);
+(14, 'ironTorso', 1);
 
 -- Armes et outils
 INSERT INTO Tools (id_tool, name_tool, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft)
@@ -79,7 +79,7 @@ VALUES
 -- Armures
 INSERT INTO Armour (id_armour, name_armour, is_craftable, effect, resistance, id_craft)
 VALUES
-(1, 'clothTorso', TRUE, '', 10, 14);
+(1, 'ironTorso', TRUE, '', 10, 14);
 
 -- CraftRessources
 INSERT INTO CraftRessources (id_ressource, id_craft, quantity_needed)
@@ -94,7 +94,8 @@ VALUES
 (5, 8, 1),
 (9, 10, 3),
 (5, 10, 2),
-(10, 13, 3);
+(10, 13, 3),
+(9, 14, 6);
 
 -- CraftToolWithTool
 INSERT INTO CraftToolWithTool (id_craft, id_tool, quantity_needed)

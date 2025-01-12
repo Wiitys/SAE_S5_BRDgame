@@ -147,10 +147,10 @@ CREATE TABLE dropTypeFarm(
 
 CREATE TABLE dropTypeMobs(
    id_ressource INT,
-   id_enemies INT,
+   id_enemy INT,
    PRIMARY KEY(id_ressource, id_enemy),
    FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource),
-   FOREIGN KEY(id_enemy) REFERENCES enemies(id_enemy)
+   FOREIGN KEY(id_enemy) REFERENCES Enemies(id_enemy)
 );
 
 CREATE TABLE CraftToolWithTool (
@@ -159,7 +159,7 @@ CREATE TABLE CraftToolWithTool (
     quantity_needed INT NOT NULL,
     PRIMARY KEY (id_craft, id_tool),
     FOREIGN KEY (id_craft) REFERENCES Crafts(id_craft),
-    FOREIGN KEY (id_tool) REFERENCES toolsTools(id_tool)
+    FOREIGN KEY (id_tool) REFERENCES Tools(id_tool)
 );
 
 CREATE TABLE CraftArmourWithArmour (
