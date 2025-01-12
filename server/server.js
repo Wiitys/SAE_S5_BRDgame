@@ -57,6 +57,7 @@ setTimeout(() => {
     getRessources();
     getWeaponsTools();
     getArmours();
+    getArmourCraftables();
     
 }, 10000);
 
@@ -80,6 +81,7 @@ let ennemiesData = {};
 let armoursData = {};
 let ressourcesData = {};
 let weaponsToolsData = {};
+let craftablesArmourData = {};
 
 async function getRessources() {
     try {
@@ -98,7 +100,7 @@ async function getRessources() {
 
             ressourcesData[id_ressource] = {
                 name: ressource_name,
-                category,
+                category : category,
                 valueFood: value_food
             };
         });
@@ -113,7 +115,6 @@ async function getEnnemies() {
     try {
         const results = await queryDatabase(`
             SELECT 
-                e.id_ennemies,
                 e.name,
                 e.health_points AS hp,
                 e.type,
@@ -131,19 +132,21 @@ async function getEnnemies() {
         `);
 
         results.forEach(ennemy => {
-            const { id_ennemies, name, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
-
-            ennemiesData[id_ennemies] = {
-                name,
-                hp,
-                type,
-                behavior,
-                attackRange,
-                searchRange,
-                actionDelay,
-                drop: { dropCategory, dropType, dropValue }
+            const { name, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
+            if(!enne)
+            ennemiesData[name] = {
+                hp : hp,
+                type : type,
+                behavior : behavior,
+                attackRange : attackRange,
+                searchRange : searchRange,
+                actionDelay : actionDelay,
+                drops: []
             };
+
+            ennemiesData[name].drops.push({ dropType, dropCategory, dropValue });
         });
+
 
         return ennemiesData;
     } catch (error) {
@@ -334,6 +337,78 @@ async function getArmours() {
         return armoursData;
     } catch (error) {
         console.error('Error fetching armours:', error);
+    }
+}
+
+async function getArmourCraftables() {
+    try {
+        // Attendre que la promesse renvoyée par queryDatabase se résolve
+        const results = await queryDatabase(`
+            SELECT 
+                c.id_craft AS id,
+                'Armour' AS category,
+                c.craft_name AS name,
+                c.quantity_out AS quantity_out,
+                CONCAT(
+                    '{',
+                    GROUP_CONCAT(
+                        CASE
+                            WHEN cr.ressource_name IS NOT NULL THEN 
+                                CONCAT(cr.ressource_name, ': ', cr_c.quantity_needed)
+                            ELSE NULL
+                        END
+                        SEPARATOR ', '
+                    ),
+                    IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM CraftArmourWithArmour sub_ca
+                            WHERE sub_ca.id_craft = c.id_craft
+                        ),
+                        CONCAT(', ',
+                            GROUP_CONCAT(
+                                CASE
+                                    WHEN a.armour_name IS NOT NULL THEN 
+                                        CONCAT(a.armour_name, ': ', ca.quantity_needed)
+                                    ELSE NULL
+                                END
+                                SEPARATOR ', '
+                            )
+                        ),
+                        ''
+                    ),
+                    '}'
+                ) AS recipe
+            FROM Crafts c
+            LEFT JOIN CraftRessources cr_c ON c.id_craft = cr_c.id_craft
+            LEFT JOIN Ressources cr ON cr_c.id_ressource = cr.id_ressource
+            LEFT JOIN CraftArmourWithArmour ca ON c.id_craft = ca.id_craft
+            LEFT JOIN Armour a ON ca.id_armour = a.id_armour
+            WHERE EXISTS (
+                SELECT 1
+                FROM Armour sub_a
+                WHERE sub_a.id_craft = c.id_craft AND sub_a.is_craftable = TRUE
+            )
+            GROUP BY c.id_craft, category, c.craft_name, c.quantity_out
+            HAVING recipe IS NOT NULL;
+        `);
+
+        // Parcours des résultats et regroupement des données
+        results.forEach(craftableArmour => {
+            const { id, category, name, quantity_out, recipe } = craftableArmour;
+
+            // Si le craftable n'existe pas encore dans craftablesData, on le crée
+            if (!craftablesArmourData[name]) {
+                craftablesArmourData[name] = {
+                    category: category,
+                    type: name,
+                    quantity: quantity_out,
+                    recipe: recipe
+                };
+            }
+        });
+    } catch (err) {
+        console.error('Erreur lors de la récupération des crafts d\'armures :', err);
     }
 }
 
