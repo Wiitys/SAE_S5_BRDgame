@@ -53,9 +53,12 @@ setTimeout(() => {
 
     getFarmables();
     getCraftables();
+    getEnnemies();
+    getRessources();
+    getWeaponsTools();
+    getArmours();
     
 }, 10000);
-
 
 // Fonction générique pour exécuter des requêtes
 function queryDatabase(query) {
@@ -73,6 +76,81 @@ function queryDatabase(query) {
 
 let farmablesData = {};
 let craftablesData = {};
+let ennemiesData = {};
+let armoursData = {};
+let ressourcesData = {};
+let weaponsToolsData = {};
+
+async function getRessources() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                r.id_ressource,
+                r.ressource_name,
+                r.category,
+                r.value_food
+            FROM 
+                Ressources r;
+        `);
+
+        results.forEach(resource => {
+            const { id_ressource, ressource_name, category, value_food } = resource;
+
+            ressourcesData[id_ressource] = {
+                name: ressource_name,
+                category,
+                valueFood: value_food
+            };
+        });
+
+        return resourcesData;
+    } catch (error) {
+        console.error('Error fetching resources:', error);
+    }
+}
+
+async function getEnnemies() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                e.id_ennemies,
+                e.name,
+                e.health_points AS hp,
+                e.type,
+                e.behavior,
+                e.attackRange,
+                e.searchRange,
+                e.actionDelay,
+                r.category AS dropCategory,
+                r.ressource_name AS dropType,
+                r.value_food AS dropValue
+            FROM 
+                Ennemies e
+            LEFT JOIN 
+                Ressources r ON e.id_ressource = r.id_ressource;
+        `);
+
+        results.forEach(ennemy => {
+            const { id_ennemies, name, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = ennemy;
+
+            ennemiesData[id_ennemies] = {
+                name,
+                hp,
+                type,
+                behavior,
+                attackRange,
+                searchRange,
+                actionDelay,
+                drop: { dropCategory, dropType, dropValue }
+            };
+        });
+
+        return ennemiesData;
+    } catch (error) {
+        console.error('Error fetching ennemies:', error);
+    }
+}
+
 
 async function getFarmables() {
     try {
@@ -184,6 +262,78 @@ async function getCraftables() {
         });
     } catch (err) {
         console.error('Erreur lors de la récupération des craftables :', err);
+    }
+}
+
+async function getWeaponsTools() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                wt.id_weapon,
+                wt.weapon_name,
+                wt.is_craftable,
+                wt.range_tool,
+                wt.angle,
+                wt.farmableDamage,
+                wt.attackDamage,
+                c.id_craft
+            FROM 
+                WeaponsTools wt
+            JOIN 
+                Crafts c ON wt.id_craft = c.id_craft;
+        `);
+
+        results.forEach(weapon => {
+            const { id_weapon, weapon_name, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft } = weapon;
+
+            weaponsToolsData[id_weapon] = {
+                name: weapon_name,
+                isCraftable: is_craftable,
+                rangeTool: range_tool,
+                angle,
+                farmableDamage,
+                attackDamage,
+                craftId: id_craft
+            };
+        });
+
+        return weaponsToolsData;
+    } catch (error) {
+        console.error('Error fetching weapons/tools:', error);
+    }
+}
+
+async function getArmours() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                a.id_armour,
+                a.armour_name,
+                a.is_craftable,
+                a.effect,
+                a.resistance,
+                c.id_craft
+            FROM 
+                Armour a
+            JOIN 
+                Crafts c ON a.id_craft = c.id_craft;
+        `);
+
+        results.forEach(armour => {
+            const { id_armour, armour_name, is_craftable, effect, resistance, id_craft } = armour;
+
+            armoursData[id_armour] = {
+                name: armour_name,
+                isCraftable: is_craftable,
+                effect,
+                resistance,
+                craftId: id_craft
+            };
+        });
+
+        return armoursData;
+    } catch (error) {
+        console.error('Error fetching armours:', error);
     }
 }
 

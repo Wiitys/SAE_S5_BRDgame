@@ -81,7 +81,7 @@ VALUES
 (8, 'goldOrnateSword', TRUE, 90, 70, 0, 15, 13);
 
 
--- CraftWeaponToolWithWeaponTool
+-- Armour
 INSERT INTO Armour (id_armour, armour_name, is_craftable, effect, resistance, id_craft)
 VALUES
 (1, 'clothTorso', TRUE, '', 10, 14);
