@@ -1,12 +1,11 @@
 export default class Tool{
-    constructor(type, quantity = 0, range = 60, angle = 45, farmableDamage = 1, attackDamage = 1) {
+    constructor(type, range = 60, angle = 45, farmableDamage = 1, attackDamage = 1) {
+      this.category = 'Tool'
       this.type = type;      // Type de tool : pickaxe, axe, sword, etc.
-      this.quantity = quantity;  // Quantité de tools
       this.range = range;
       this.angle = Phaser.Math.DegToRad(angle);
       this.farmableDamage = farmableDamage;
       this.attackDamage = attackDamage;
-      this.isRanged = false;
     }
     
     addTool(quantity) {

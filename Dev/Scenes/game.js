@@ -3,12 +3,19 @@ import Drop from "../Classes/Drop.js";
 import Farmable from "../Classes/Farmable.js";
 import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
-import Inventory from "../Classes/Inventory.js";
+import Inventory from "../Classes/InventoryManagement.js";
+import InventoryUI from '../Classes/InventoryUI';
+import HotbarManagement from '../Classes/HotbarManagement.js';
+import HotbarUI from '../Classes/HotbarUI.js';
+import CraftingUI from '../Classes/CraftingUI.js'
+
 import Player from "../Classes/Player.js";
 import Ennemi from "../Classes/Ennemi.js";
 import OtherPlayer from "../Classes/OtherPlayer.js"
 import socket from '../Modules/socket.js';
 
+var otherPlayers;
+var otherPlayerSprites;
 var existingFarmables;
 var existingDrops;
 var existingProjectiles;
@@ -47,6 +54,10 @@ export class GameScene extends Phaser.Scene {
     //ressources
     this.load.image("wood", "/assets/wood.png");
     this.load.image("stone", "/assets/stone.png");
+    this.load.image("stick", "/assets/stick.png");
+    this.load.image("plank", "/assets/plank.png");
+    this.load.image("ironOre", "/assets/ironOre.png");
+    this.load.image("ironIngot", "/assets/ironIngot.png");
     this.load.image("meat", "/assets/meat.png");
 
     //tools
@@ -95,6 +106,10 @@ export class GameScene extends Phaser.Scene {
         this.syncEnemies()
         
         this.inventory = new Inventory(this);
+        this.inventoryUI = new InventoryUI(this, this.inventory);
+        this.craftingUI = new CraftingUI(this, this.inventory);
+        this.hotbarManagement = new HotbarManagement(this.inventory);
+        this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
         
         // Exemple : Ajouter des ressources pour tester
         this.inventory.addItem("Ressource", "wood", 10);
@@ -102,9 +117,8 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.addItem("Tool", "stoneAxe", 1);
         this.inventory.addItem("Tool", "woodenPickaxe", 1);
-        
-        this.inventory.createUI();
-        this.inventory.updateInventoryText();
+
+        this.createMeat(50,50)
 
         this.backgroundMusic = this.sound.add('backgroundMusic', {
             volume: 0.33, // Ajuster le volume
@@ -134,7 +148,6 @@ export class GameScene extends Phaser.Scene {
         }
         console.log(enemy)
     }
-
     
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
@@ -183,6 +196,21 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
+    createMeat(x, y) {
+        const category = 'Food';
+        const dropType = 'meat';
+        
+        const dropQuantity = 1;
+        const drop = {
+            category: category,
+            type: dropType,
+            quantity: dropQuantity,
+            x: x,
+            y: y,
+        };
+        socket.emit('createDrop', drop);
+    }
+    
     farmableHalfHp(farmableElement, type){
         switch (type) {
             case "tree":
@@ -213,8 +241,13 @@ export class GameScene extends Phaser.Scene {
             dropElement,
             () => {
                 // Quand le joueur marche sur le drop, elle est collectée
-                this.collectDrop(dropElement.dropData, dropElement.id);
-                dropElement.destroy();
+                // Tente de collecter le drop
+                if (this.collectDrop(dropElement.dropData, dropElement.id)) {
+                    dropElement.destroy();
+                } else {
+                    dropElement.setTint(0xff0000); // Rougir temporairement pour indiquer l'échec
+                    this.time.delayedCall(200, () => dropElement.clearTint());
+                }
             },
             null,
             this
@@ -224,17 +257,22 @@ export class GameScene extends Phaser.Scene {
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
         if (drop.type) {
-            this.inventory.addItem(drop.category, drop.type, drop.quantity)
-            this.inventory.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].quantity}`);
-            socket.emit('collectDrop', id);
+            if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
+                this.inventory.addItem(drop.category, drop.type, drop.quantity);
+                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
+                socket.emit('collectDrop', id);
+                return true;
+            } else {
+                console.log(`Impossible de collecter ${drop.type}, inventaire plein.`);
+                return false;
+            }
         } else {
-            console.log(`drop ${drop.type} non définie.`);
+            console.log(`Drop ${drop.type} non défini.`);
+            return false;
         }
     }
     
-    updateOtherPlayers() {
-        // Nettoyage des anciens listeners pour éviter les doublons
+    updateOtherPlayers(){
         socket.off('updatePlayers');
         socket.off('playerHit');
         socket.off("updatePlayerDirection")
@@ -304,7 +342,6 @@ export class GameScene extends Phaser.Scene {
                         existingSprite.x = playerData.x;
                         existingSprite.y = playerData.y;
                         
-                        
                     }
                 }
             });
@@ -317,7 +354,6 @@ export class GameScene extends Phaser.Scene {
                 const playerSprite = this.playersGroup.getChildren().find(p => p.id === otherPlayer.id)
                 const exists = data.some(p => p.id === otherPlayer.id);
                 if (!exists) {
-                    
                     // Retire l'élément du tableau
                     this.otherPlayers.splice(i, 1);
                     this.playersGroup.remove(playerSprite)

@@ -15,7 +15,7 @@ export default class Craftable{
         return true; // Toutes les ressources sont disponibles
     }
 
-    craft(playerInventory, category) {
+    craft(playerInventory) {
         if (!this.isCraftable(playerInventory)) {
             console.log("Pas assez de ressources.");
             return 0; // Indique que le craft a échoué
@@ -25,7 +25,7 @@ export default class Craftable{
         for (const [ingredient, amount] of Object.entries(this.recipe)) {
             playerInventory.removeItem(ingredient, amount); // Retire les ressources de l'inventaire
         }
-        playerInventory.addItem(category, this.type, this.quantity);
+        playerInventory.addItem(this.category, this.type, this.quantity);
 
         console.log(`Crafted ${this.quantity} ${this.type}(s)!`);
     }

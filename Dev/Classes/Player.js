@@ -13,8 +13,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
+    this.setDepth(1);
     this.id = socket.id
-    console.log(this.id)
     // Paramètres et contrôles du joueur
     this.isPlayer = true;
     this.damageReduction = 0;
@@ -22,20 +22,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastDirection = "up";
     this.equippedTool = null;
     this.toolSprite = null;
-    this.attackAngle = 0;
-    this.isAttackEnabled = true;
     this.cursor = scene.input.keyboard.createCursorKeys();
-    this.IKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-    this.scene.input.on("pointerdown", (pointer) => {
-      if (this.isAttackEnabled && pointer.leftButtonDown()) {
-        this.handleAttack();
-      }
-    });
+    this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
-    
+
     const config = {
       width: 300,
       height: 15,
@@ -66,10 +59,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Action de réduction de la vie avec la touche "P" pour tester la barre de vie
     scene.input.keyboard.on("keydown-P", () => {
       this.playerHP.removeHealth(10);
-    });
-    this.IKey.on("down", () => {
-      this.isAttackEnabled = !this.isAttackEnabled;
-      console.log("Attack enabled:", this.isAttackEnabled);
     });
   }
 
@@ -146,18 +135,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.updateIdleFrame();
     } else {
       this.playAnimation();
-    }
-  }
-
-  handleAttack() {
-    if (this.equippedTool) {
-      if (!this.equippedTool.isRanged) {
-        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
-      } else {
-        this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage);
-      }
-    } else {
-      this.attackCone();
     }
   }
   
@@ -309,28 +286,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       ownerId: socket.id,
       attackDamageEntities: attackDamageEntities
     });
-
-    // Liste des cibles potentielles (désactivé ici, mais peut être activé si besoin)
-    /*
-    const players = this.scene.otherPlayerSprites;
-    players.forEach(target => {
-      this.scene.physics.add.collider(projectile, target, () => {
-        // Actions lors de la collision avec la cible
-        if (target.takeDamage) {
-            target.takeDamage(attackDamageEntities); // Inflige des dégâts si la cible a une méthode `takeDamage`
-        }
-        projectile.destroy(); // Détruit le projectile après avoir touché la cible
-        console.log('cible touchée');
-      });
-    });
-    
-
-    // Détruire le projectile après un délai s'il ne touche rien
-    this.scene.time.delayedCall(3000, () => {
-      if (projectile.active) {
-        projectile.destroy();
-      }
-    });*/
 }
 
 
@@ -353,6 +308,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.time.delayedCall(200, () => this.attackConeGraphic.clear(), [], this);
   }
 
+    // Calculer l’angle d’attaque basé sur la dernière direction
   getAttackRotation() {
     const pointer = this.scene.input.activePointer; // Récupère la position de la souris
     const camera = this.scene.cameras.main; // Récupère la caméra principale
@@ -366,22 +322,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dy = pointerWorldY - this.y;
 
     // Retourner l'angle entre le joueur et la souris
-    return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
-}
-
-  
-  // Interaction avec les farmables
-  interactWithFarmable(farmableGroup) {
-      farmableGroup.children.each((farmableElement) => {
-        if (
-          Phaser.Geom.Intersects.RectangleToRectangle(
-            this.getBounds(),
-            farmableElement.getBounds()
-          )
-        ) {
-          this.scene.hitFarmable(this, farmableElement);
-        }
-      });
+    return Math.atan2(dy, dx);
   }
   
   // Gestion des réductions de dommage
@@ -405,7 +346,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   equipTool(tool) {
     this.equippedTool = tool;
     console.log(tool.type)
-    console.log(tool.isRanged)
     // Si un outil est déjà affiché, changez son sprite
     if (this.toolSprite) {
         this.toolSprite.setTexture(this.equippedTool.type);
@@ -437,19 +377,60 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   startHungerManagement() {
+    this.foodometer.bar.setDepth(1);
+    this.foodometer.background.setDepth(1);
+
     this.hungerInterval = setInterval(() => {
         this.hungerManagement();
     }, 10000); // 10 000 ms = 10 secondes
-}
 
-stopHungerManagement() {
+    this.regenInterval = setInterval(() => {
+      if(this.foodometer.currentHealth >= 0.9*this.foodometer.maxHealth){
+        this.playerHP.addHealth(4)
+      }
+    }, 4000); // 10 000 ms = 10 secondes
+  }
+
+  stopHungerManagement() {
     clearInterval(this.hungerInterval); // Arrête l'intervalle
-}
+  }
+
+  eatFood() {
+    if(this.equippedTool.value && this.equippedTool.quantity > 0){
+      this.foodometer.addHealth(this.equippedTool.value);
+      this.equippedTool.quantity--;
+      this.scene.inventory.playerEat(this.equippedTool.type, 1);
+    }
+
+    if(this.equippedTool.quantity == 0){
+      this.unequipTool()
+    }
+  }
 
   update() {
     this.handleMovement();
-
-    this.attackAngle = this.getAttackRotation();
+    //lorsque l'objet est consommé le joueur ne peux pas attaquer sauf si il rééquipe un item
+    
+    if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
+      if(this.equippedTool){
+        switch (this.equippedTool.category){
+          case 'Tool':
+            this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
+            break;
+          case 'Food':
+            this.eatFood()
+            break;
+          case 'Ressource':
+            //??
+          default:
+            this.attackCone();
+            break;
+        }
+      } else {
+        this.attackCone();
+      }
+      
+    }
 
     if(this.equippedTool){
       this.toolSprite.setPosition(this.x + 16, this.y);
@@ -460,6 +441,4 @@ stopHungerManagement() {
       this.scene.scene.start("scene-menu");
     }
   }
-
-
 }
