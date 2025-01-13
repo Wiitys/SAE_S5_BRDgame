@@ -24,6 +24,7 @@ export class GameScene extends Phaser.Scene {
     this.otherPlayers;
     this.playersGroup;
     this.enemiesGroup;
+    this.backgroundMusicPlaying = false;
   }
 	
 	preload() {
@@ -31,6 +32,8 @@ export class GameScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('map', '/assets/map/map.json');
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
+    
 
     //Ennemis
     this.load.image("ennemi", "/assets/ennemi.png");
@@ -49,6 +52,9 @@ export class GameScene extends Phaser.Scene {
     //tools
     this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
     this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+
+    // Charger les sons
+    this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
   }
     
     create() {
@@ -99,12 +105,22 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.createUI();
         this.inventory.updateInventoryText();
+
+        this.backgroundMusic = this.sound.add('backgroundMusic', {
+            volume: 0.33, // Ajuster le volume
+            loop: true,  // Activer la boucle
+        });
     }
     
     update() {
         // Gestion des mouvements du joueur
         this.player.update();
         this.updateOtherPlayers();
+
+        if (!this.backgroundMusicPlaying) {
+            this.backgroundMusic.play();
+            this.backgroundMusicPlaying = true; // Empêcher de rejouer
+        }
     }
     
     createEnemy(x, y, type, id) {
@@ -116,9 +132,9 @@ export class GameScene extends Phaser.Scene {
         if(type == 'boss'){
             enemy.setScale(2,2)
         }
-
         console.log(enemy)
     }
+
     
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
