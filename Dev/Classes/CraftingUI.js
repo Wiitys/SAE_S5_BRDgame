@@ -83,6 +83,7 @@ export default class CraftingUI {
         
         // Conserver le masque dans la scène pour des ajustements futurs (facultatif)
         this.maskZone = maskZone;
+        this.maskZone.setAlpha(0);
         
         this.viewHeight = screenHeight; // Hauteur visible
         this.contentHeight = this.recipeSlots.length * (128 + 20); // Hauteur totale
@@ -264,6 +265,7 @@ export default class CraftingUI {
         this.scene.player.setDepth(0);
         this.scene.player.foodometer.bar.setDepth(0);
         this.scene.player.foodometer.background.setDepth(0);
+        this.maskZone.setAlpha(1);
     }
     
     hideUI() {
@@ -276,6 +278,7 @@ export default class CraftingUI {
         this.scene.player.setDepth(1);
         this.scene.player.foodometer.bar.setDepth(1);
         this.scene.player.foodometer.background.setDepth(1);
+        this.maskZone.setAlpha(0);
     }
     
     enableCraftingInputs() {
