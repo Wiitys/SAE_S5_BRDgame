@@ -42,9 +42,9 @@ VALUES
 (8, 1);  -- apple for tree
 
 -- Ennemis
-INSERT INTO Enemies (id_enemy, name_enemy, healthPoints, type, behavior, attackRange, searchRange, actionDelay, id_ressource)
+INSERT INTO Enemies (id_enemy, name_enemy, healthPoints, type, behavior, attackRange, searchRange, actionDelay)
 VALUES
-(1, 'Boss', 200, 'Boss', 'Aggressive',  250, 400,  4000, NULL);
+(1, 'Boss', 200, 'Boss', 'Aggressive',  250, 400,  4000);
 
 -- Crafts
 INSERT INTO Crafts (id_craft, name_craft, quantity_out)
