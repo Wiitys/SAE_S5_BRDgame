@@ -237,13 +237,7 @@ export default class CraftingUI {
 
 
     performCraft(craftable) {
-        if (craftable.isCraftable(this.inventory)) {
-            craftable.craft(this.inventory);
-            this.scene.events.emit('craftingUpdate');
-            console.log(`Crafted: ${craftable.type}`);
-        } else {
-            console.log('Not enough resources!');
-        }
+        this.inventory.playerCraft(craftable.category, craftable.type, craftable.quantity);
     }
     
     toggleUI() {
@@ -283,13 +277,13 @@ export default class CraftingUI {
     
     enableCraftingInputs() {
         // Ajouter des événements pour les clics ou les glissements sur les éléments de l'UI
-        this.scene.input.on('pointerdown', (pointer) => this.handleCraftButtonClick(pointer));
+        this.scene.input.on('pointerdown', this.handleCraftButtonClick, this);
         this.scene.input.on('wheel', this.handleCraftingScroll, this);
     }
     
     disableCraftingInputs() {
         // Retirer les événements pour éviter les conflits
-        this.scene.input.off('pointerdown', (pointer) => this.handleCraftButtonClick(pointer));
+        this.scene.input.off('pointerdown', this.handleCraftButtonClick, this);
         this.scene.input.off('wheel', this.handleCraftingScroll, this);
     }
 }

@@ -314,6 +314,34 @@ export default class Inventory {
 
     }
 
+    playerCraft(category, type, quantity){
+        const itemKey = Object.keys(this.craftables).find(key => this.craftables[key].type === type);
+        let items = []
+        let amounts = []
+
+        if (itemKey) {
+            for (const [ingredient, amount] of Object.entries(this.craftables[type].recipe)) {
+                const itemToRemove = Object.keys(this.inventory).find(key => this.inventory[key].item.type === ingredient && this.inventory[key].item.quantity >= amount);
+                
+                if(!itemToRemove) return
+                items.push(itemToRemove);
+                amounts.push(amount);
+            }
+
+            for(let i=0; i<items.length; i++){
+                console.log(i)
+                console.log(items[i])
+                const slotIndex = this.inventory[items[i]].slot
+                this.removeItem(slotIndex, amounts[i]);
+            }
+
+            this.addItem(category, type, quantity)
+        } else {
+            console.log("Craftable non trouvé.");
+        }
+
+    }
+
     // Méthode pour échanger les objets entre deux slots
     // fromSlot: slot à partir duquel déplacer un objet
     // toSlot: slot vers lequel déplacer l'objet
