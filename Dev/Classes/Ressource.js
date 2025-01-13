@@ -1,5 +1,6 @@
 export default class Ressource{
   constructor(type, quantity = 0) {
+    this.category = 'Ressource'
     this.type = type;      // Type de ressource : bois, charbon, viande, etc.
     this.quantity = quantity;  // Quantité de la ressource
   }
