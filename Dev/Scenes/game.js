@@ -37,7 +37,7 @@ export class GameScene extends Phaser.Scene {
         
         //farmables
         this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.image("rock", "/assets/rock.png");
+        this.load.image("rock", "/assets/rockSpritesheet.png");
         this.load.image("ironOre", "/assets/ironOre.png");
         this.load.image("goldOre", "/assets/goldOre.png");
         
@@ -117,14 +117,13 @@ export class GameScene extends Phaser.Scene {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);
         farmableElement.setOrigin(0.5, 0.5);
-        farmableElement.id = id;
         farmableElement.setDisplaySize(32, 32);
+        farmableElement.id = id;
         farmableElement.drops = drops;
-        // Associer un objet Farmable à l'instance
         farmableElement.farmableData = new Farmable(type, hp);
     }
     
-    hitFarmable(player, farmableElement, damage) {
+    hitFarmable(farmableElement, damage) {
         const farmable = farmableElement.farmableData;
         const drops = farmableElement.drops;
         let randomDrop = {};
@@ -174,7 +173,7 @@ export class GameScene extends Phaser.Scene {
             farmableElement.setFrame(1);
             break;
             case "rock":
-            //farmableElement.setFrame(1);  pas encore fait
+            farmableElement.setFrame(1);
             break;
             default:
             break;
