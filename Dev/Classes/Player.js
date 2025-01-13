@@ -1,4 +1,5 @@
 import HealthBar from "./HealthBar.js";
+import socket from "../Modules/socket.js"
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
 
@@ -12,7 +13,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
-    
+    this.id = socket.id
+    console.log(this.id)
     // Paramètres et contrôles du joueur
     this.isPlayer = true;
     this.damageReduction = 0;
@@ -114,17 +116,21 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (left.isDown && !right.isDown) {
       velocityX = -this.playerSpeed;
       this.lastDirection = "left";
+      this.updateServerDirection();
     } else if (right.isDown && !left.isDown) {
       velocityX = this.playerSpeed;
       this.lastDirection = "right";
+      this.updateServerDirection();
     }
 
     if (up.isDown && !down.isDown) {
       velocityY = -this.playerSpeed;
       this.lastDirection = "up";
+      this.updateServerDirection();
     } else if (down.isDown && !up.isDown) {
       velocityY = this.playerSpeed;
       this.lastDirection = "down";
+      this.updateServerDirection();
     }
 
     if (velocityX !== 0 && velocityY !== 0) {
@@ -153,6 +159,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.attackCone();
     }
+  }
+  
+  // Méthode pour informer le serveur
+  updateServerDirection() {
+    socket.emit("playerDirectionChanged", {
+        id: this.id, // Identifiant du joueur
+        lastDirection: this.lastDirection,
+    });
   }
 
   playAnimation() {
@@ -191,7 +205,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
   // Méthode de gestion d'attaque en cône
-    attackCone(
+  attackCone(
       attackRange = this.attackRange, 
       attackConeAngle = this.attackConeAngle, 
       attackDamageFarmables = this.attackDamageFarmables, 
@@ -269,20 +283,32 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Calculer le centre de la hitbox du joueur
     const { centerX, centerY } = this.getBounds();
 
-    const projectile = this.scene.projectiles.create(centerX, centerY, 'projectileTexture'); // Sprite pour le projectile
+    //const projectile = this.scene.projectiles.create(centerX, centerY, 'projectileTexture'); // Sprite pour le projectile
     
     // Obtenir l'angle d'attaque en fonction de la dernière direction
-    const attackRotation = this.getAttackRotation();
+    const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
 
     // Définir la vitesse de déplacement
     const speed = 150; // pixels par seconde
-
+    
     // Calculer la vitesse en X et Y à partir de l'angle
     const velocityX = Math.cos(attackRotation) * speed;
     const velocityY = Math.sin(attackRotation) * speed;
 
     // Appliquer la vitesse au projectile
-    projectile.setVelocity(velocityX, velocityY);
+    //projectile.setVelocity(velocityX, velocityY);
+
+    // Synchronisation avec le serveur
+    socket.emit('createProjectile', {
+      x: centerX,
+      y: centerY,
+      targetX: mouseX,
+      targetY: mouseY,
+      speed: speed,
+      rotation: attackRotation,
+      ownerId: socket.id,
+      attackDamageEntities: attackDamageEntities
+    });
 
     // Liste des cibles potentielles (désactivé ici, mais peut être activé si besoin)
     /*
@@ -297,14 +323,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         console.log('cible touchée');
       });
     });
-    */
+    
 
     // Détruire le projectile après un délai s'il ne touche rien
     this.scene.time.delayedCall(3000, () => {
       if (projectile.active) {
         projectile.destroy();
       }
-    });
+    });*/
 }
 
 
@@ -340,8 +366,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dy = pointerWorldY - this.y;
 
     // Retourner l'angle entre le joueur et la souris
-    return Math.atan2(dy, dx);
-  }
+    return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
+}
 
   
   // Interaction avec les farmables

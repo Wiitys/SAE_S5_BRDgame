@@ -25,7 +25,7 @@ export default class Inventory {
             stonePickaxe: new Tool('stonePickaxe', 1, 45, 90, 4, 3),
             woodenAxe: new Tool('woodenAxe', 1, 30, 60, 2, 2),
             stoneAxe: new Tool('stoneAxe', 1, 70, 90, 4, 3),
-            bow: new RangedWeapon('bow', 1),
+            bow: new RangedWeapon('bow', 1, 300, 5),
         };
         this.itemSelected = null;
         this.itemButtons = {};
