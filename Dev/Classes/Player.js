@@ -314,7 +314,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             farmableElement.getBounds()
           )
         ) {
-          this.scene.hitFarmable(this, farmableElement);
+          this.scene.hitFarmable(farmableElement);
         }
       });
   }
@@ -334,7 +334,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
     else{
       console.log(target)
-      this.scene.hitFarmable(this, target, attackDamageFarmables);
+      this.scene.hitFarmable(target, attackDamageFarmables);
     }
   }
 
