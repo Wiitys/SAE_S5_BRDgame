@@ -197,8 +197,11 @@ export default class CraftingUI {
                     fontSize: '18px',
                     color: '#ffffff',
                 }).setOrigin(0.5);
-                
                 const craftableSprite = this.scene.add.sprite(0, -slotObj.recipeBackground.height / 2 + 10 + iconSize, craftable.type).setDisplaySize(iconSize, iconSize);
+                const craftableQuantity = this.scene.add.text(iconSize/2, -slotObj.recipeBackground.height / 2 + 52, craftable.quantity, {
+                    fontSize: '16px',
+                    color: '#ffffff',
+                }).setOrigin(0.5);
                 const craftButton = this.scene.add.text(0, slotObj.recipeBackground.height / 2 - 20, 'Craft', {
                     fontSize: '16px',
                     backgroundColor: '#00ff00',
@@ -215,6 +218,7 @@ export default class CraftingUI {
                 
                 slot.add(craftableName);
                 slot.add(craftableSprite);
+                slot.add(craftableQuantity);
                 slot.add(craftButton);
                 maxIndex = index;
             } else {

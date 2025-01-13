@@ -236,19 +236,44 @@ export default class InventoryUI {
     }
 
     dropItem(pointer) {
-        const slotClicked = this.getSlotClicked(pointer.x, pointer.y);
-        if (slotClicked) {
-            console.log(`Item dropped! Row: ${slotClicked.row}, Col: ${slotClicked.col}, Index: ${slotClicked.index}`);
-            this.inventory.changeSlot(this.draggingItem.index, slotClicked.index);  // Utilisation de changeSlot pour échanger les items
+        // Vérifie si le pointeur est en dehors de la zone de fond de l'inventaire
+        const camera = this.scene.cameras.main;
+        const screenWidth = camera.width;
+        const screenHeight = camera.height;
+    
+        // Récupère les coordonnées de la zone de fond
+        const bgWidth = screenWidth * 0.8;
+        const bgHeight = screenHeight * 0.8;
+        const bgX = (screenWidth - bgWidth) / 2;
+        const bgY = (screenHeight - bgHeight) / 2;
+    
+        // Vérifie si le pointeur est en dehors du fond de l'inventaire
+        const isOutsideInventory = pointer.x < bgX || pointer.x > bgX + bgWidth || pointer.y < bgY || pointer.y > bgY + bgHeight;
+    
+        if (isOutsideInventory) {
+            // Si l'élément est déposé en dehors de l'inventaire, on appelle la méthode dropItem de l'inventaire
+            if (this.draggingItem) {
+                console.log(`Dropping item outside inventory: ${this.draggingItem.index}`);
+                this.inventory.dropItem(this.draggingItem.index);  // Appel de la méthode dropItem de la classe Inventory
+            }
+        } else {
+            // Si l'élément est déposé dans un slot, on échange les éléments
+            const slotClicked = this.getSlotClicked(pointer.x, pointer.y);
+            if (slotClicked) {
+                console.log(`Item dropped inside inventory! Row: ${slotClicked.row}, Col: ${slotClicked.col}, Index: ${slotClicked.index}`);
+                this.inventory.changeSlot(this.draggingItem.index, slotClicked.index);  // Utilisation de changeSlot pour échanger les items
+            }
         }
-
+    
+        // Réinitialise l'alpha de l'icône et désactive les écouteurs de mouvement et de relâchement
         if (this.draggedIcon) {
             this.draggedIcon.setAlpha(1);
         }
-
+    
         this.scene.input.off('pointermove', this.updateDrag, this);
         this.scene.input.off('pointerup', this.dropItem, this);
         this.draggedIcon = null;
         this.draggingItem = null;
     }
+    
 }
