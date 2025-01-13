@@ -229,7 +229,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         });
     
         // **Afficher le cône d'attaque pour le débogage**
-        this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
+        //this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
     
         // Vérifier les collisions dans le cône
         const farmables = this.scene.farmableGroup.getChildren();
