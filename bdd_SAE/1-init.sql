@@ -64,10 +64,8 @@ CREATE TABLE Enemies(
    attackRange INT,
    searchRange INT,
    actionDelay VARCHAR(50),
-   id_ressource INT,
    PRIMARY KEY(id_enemy),
    UNIQUE(id_enemy),
-   FOREIGN KEY(id_ressource) REFERENCES Ressources(id_ressource)
 );
 
 CREATE TABLE Farmables(
