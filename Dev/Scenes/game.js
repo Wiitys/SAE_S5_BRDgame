@@ -68,14 +68,14 @@ export class GameScene extends Phaser.Scene {
     this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
   }
     
-    create() {
+  create() {
         const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
         
         const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
     
         const backgroundLayer = map.createLayer('top', tileset, 0, 0);
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-        
+
         //créer les instances
         this.player = new Player(this, 20, 20);
         this.player.setCollideWorldBounds(true);
@@ -148,7 +148,7 @@ export class GameScene extends Phaser.Scene {
         }
         console.log(enemy)
     }
-    
+
     createFarmable(type, x, y, id, hp) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);

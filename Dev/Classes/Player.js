@@ -30,10 +30,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.playerHP = new HealthBar(scene);
 
     const config = {
-      width: 300,
-      height: 15,
-      x: 100,
-      y: 60,
+      width: this.scene.cameras.main.width/4,
+      height: this.scene.cameras.main.height/40,
+      x: this.scene.cameras.main.width/2 - (this.scene.cameras.main.width/4)/2,
+      y: 100,
       background: {
         color: 0xff0000,
       },

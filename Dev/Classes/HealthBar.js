@@ -1,34 +1,37 @@
 export default class HealthBar {
   constructor(
-    game,
-    providedConfig = this.DefaultConfiguration(),
+    scene,
+    providedConfig = {},
     maxHealth = 100,
     currentHealth = 100
   ) {
-    this.game = game;
+    this.scene = scene;
     this.maxHealth = maxHealth;
     this.currentHealth = currentHealth;
-
+    this.providedConfig = this.DefaultConfiguration()
     // Configuration de la barre de santé
     this.setupConfiguration(providedConfig);
-
+    
     // Dessin initial de la barre de santé
     this.setPosition(this.config.x, this.config.y);
     this.drawBackground();
     this.drawHealthBar();
-  }
 
+    // Écouteur pour la redimension du canvas
+    this.scene.scale.on('resize', this.onResize, this);
+  }
+  
   // Configuration avec paramètres par défaut
   setupConfiguration(providedConfig) {
     this.config = this.mergeWithDefaultConfiguration(providedConfig);
   }
-
+  
   mergeWithDefaultConfiguration(newConfig) {
     const defaultConfig = {
-      width: 300,
-      height: 30,
-      x: 50,
-      y: 50,
+      width: this.scene.cameras.main.width/4,
+      height: this.scene.cameras.main.height/30,
+      x: this.scene.cameras.main.width/2 - (this.scene.cameras.main.width/4)/2,
+      y: this.scene.cameras.main.height/30,
       background: {
         color: 0xff0000,
       },
@@ -38,12 +41,21 @@ export default class HealthBar {
     };
     return this.mergeObjects(defaultConfig, newConfig);
   }
-
+  
   DefaultConfiguration() {
+    const camera = this.scene.cameras.main;
+    const screenWidth = camera.width;
+    const screenHeight = camera.height;
+    
+    const bgWidth = screenWidth * 0.8;
+    const bgHeight = screenHeight * 0.8;
+    const bgX = (screenWidth - bgWidth) / 2;
+    const bgY = (screenHeight - bgHeight) / 2;
+    
     const defaultConfig = {
-      width: 300,
-      height: 30,
-      x: 100,
+      width: this.scene.cameras.main.width/4,
+      height: this.scene.cameras.main.height/30,
+      x: this.scene.cameras.main.width/2 - (this.scene.cameras.main.width/4)/2,
       y: 20,
       background: {
         color: 0xff0000,
@@ -54,21 +66,21 @@ export default class HealthBar {
     };
     return defaultConfig;
   }
-
+  
   mergeObjects(targetObj, newObj) {
     for (const p in newObj) {
       try {
         targetObj[p] =
-          newObj[p].constructor === Object
-            ? this.mergeObjects(targetObj[p], newObj[p])
-            : newObj[p];
+        newObj[p].constructor === Object
+        ? this.mergeObjects(targetObj[p], newObj[p])
+        : newObj[p];
       } catch (e) {
         targetObj[p] = newObj[p];
       }
     }
     return targetObj;
   }
-
+  
   addHealth(amount) {
     this.currentHealth += amount;
     if (this.currentHealth > this.maxHealth) {
@@ -76,7 +88,7 @@ export default class HealthBar {
     }
     this.updateHealthBar();
   }
-
+  
   removeHealth(amount) {
     if (this.currentHealth >= amount) {
       this.currentHealth -= amount;
@@ -86,7 +98,7 @@ export default class HealthBar {
     }
     this.updateHealthBar();
   }
-
+  
   updateHealthBar() {
     const healthRatio = this.currentHealth / this.maxHealth;
     this.bar.clear();
@@ -98,14 +110,14 @@ export default class HealthBar {
       this.config.height
     );
   }
-
- setPosition(x, y) {
+  
+  setPosition(x, y) {
     this.x = x;
     this.y = y;
   }
-
+  
   drawBackground() {
-    this.background = this.game.add.graphics();
+    this.background = this.scene.add.graphics();
     this.background.fillStyle(this.config.background.color, 1);
     this.background.fillRect(
       this.config.x,
@@ -115,10 +127,32 @@ export default class HealthBar {
     );
     this.background.setScrollFactor(0);
   }
-
+  
   drawHealthBar() {
-    this.bar = this.game.add.graphics();
+    this.bar = this.scene.add.graphics();
     this.updateHealthBar();
     this.bar.setScrollFactor(0);
   }
+
+  onResize(gameSize) {
+    const { width, height } = gameSize;
+
+    // Recalculer les dimensions et position en fonction de la nouvelle taille
+    this.config.width = width / 4; // Largeur de la barre = 1/4 de l'écran
+    this.config.height = height / 30; // Hauteur de la barre = 1/30 de l'écran
+    this.config.x = (width - this.config.width) / 2; // Centrer horizontalement
+
+    // Mettre à jour la position et les dimensions de l'arrière-plan
+    this.background.clear();
+    this.background.fillStyle(this.config.background.color, 1);
+    this.background.fillRect(
+        this.config.x,
+        this.config.y,
+        this.config.width,
+        this.config.height
+    );
+
+    // Mettre à jour la barre de santé
+    this.updateHealthBar();
+}
 }

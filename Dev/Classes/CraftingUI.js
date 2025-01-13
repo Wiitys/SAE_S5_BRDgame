@@ -15,6 +15,10 @@ export default class CraftingUI {
         this.craftingContainer = this.scene.add.container(0, 0).setVisible(false).setScrollFactor(0);
         
         this.initUI();
+
+        this.scene.scale.on('resize', (gameSize) => {
+            this.onResize(gameSize);
+        });
     }
     
     initUI() {
@@ -46,7 +50,38 @@ export default class CraftingUI {
         
         this.recipeSlots = [];
         this.slotHeight = 128; // Hauteur d'un slot
-        const rows = 10; // Total des recettes (débordera l'écran)
+        this.createSlotBackground();
+        
+        //Créer une zone visible (le masque)
+        const maskZone = this.scene.add.rectangle(
+            bgX + bgWidth / 2,
+            bgY + bgHeight / 2,
+            bgWidth,
+            bgHeight,
+            0.5 // Transparence
+        ).setOrigin(0.5).setScrollFactor(0);
+        const mask = maskZone.createGeometryMask();
+        this.craftingContainer.setMask(mask);
+        
+        // Conserver le masque dans la scène pour des ajustements futurs (facultatif)
+        this.maskZone = maskZone;
+        
+        this.viewHeight = screenHeight; // Hauteur visible
+        this.contentHeight = this.recipeSlots.length * (128 + 20); // Hauteur totale
+        this.updateCraftingUI();
+    }
+
+    createSlotBackground(){
+        const camera = this.scene.cameras.main;
+        const screenWidth = camera.width;
+        const screenHeight = camera.height;
+        
+        const bgWidth = screenWidth * 0.8;
+        const bgHeight = screenHeight * 0.8;
+        const bgX = (screenWidth - bgWidth) / 2;
+        const bgY = (screenHeight - bgHeight) / 2;
+
+        const rows = 20; // Total des recettes (débordera l'écran)
         const padding = 20;
         const startX = bgX + padding;
         const startY = bgY + 100;
@@ -69,24 +104,6 @@ export default class CraftingUI {
                 index: row,
             });
         }
-        
-        //Créer une zone visible (le masque)
-        const maskZone = this.scene.add.rectangle(
-            bgX + bgWidth / 2,
-            bgY + bgHeight / 2,
-            bgWidth,
-            bgHeight,
-            0.5 // Transparence
-        ).setOrigin(0.5).setScrollFactor(0);
-        const mask = maskZone.createGeometryMask();
-        this.craftingContainer.setMask(mask);
-        
-        // Conserver le masque dans la scène pour des ajustements futurs (facultatif)
-        this.maskZone = maskZone;
-        
-        this.viewHeight = screenHeight; // Hauteur visible
-        this.contentHeight = this.recipeSlots.length * (128 + 20); // Hauteur totale
-        this.updateCraftingUI();
     }
 
     updateCraftingContainerHeight(maxIndex) {
@@ -94,7 +111,7 @@ export default class CraftingUI {
         this.craftingContainer.height = maxIndex * 128 + this.craftingContainer.list.reduce((totalHeight, child) => {
             return totalHeight + child.displayHeight;
         }, 0);
-        console.log('Nouvelle hauteur du conteneur:', this.craftingContainer.height);
+        //console.log('Nouvelle hauteur du conteneur:', this.craftingContainer.height);
     }
     
     handleCraftingScroll(pointer, gameObjects, deltaX, deltaY) {
@@ -151,7 +168,7 @@ export default class CraftingUI {
     updateCraftingUI() {
         let maxIndex = 0
         this.craftingButtons = []; // Tableau pour stocker les coordonnées des boutons de craft
-
+        
         this.recipeSlots.forEach((slotObj, index) => {
             const keys = Object.keys(this.craftables);
             const craftable = this.craftables[keys[index]];
@@ -208,7 +225,7 @@ export default class CraftingUI {
                 slot.removeAll(true);
             }
         });
-        
+        //this.createSlotBackground();
         this.updateCraftingContainerHeight(maxIndex-1)
     }
 
@@ -288,5 +305,57 @@ export default class CraftingUI {
         // Retirer les événements pour éviter les conflits
         this.scene.input.off('pointerdown', (pointer) => this.handleCraftButtonClick(pointer));
         this.scene.input.off('wheel', this.handleCraftingScroll, this);
+    }
+
+    onResize(gameSize) {
+        const { width, height } = gameSize;
+
+        // Recalculer les dimensions principales
+        const bgWidth = width * 0.8;
+        const bgHeight = height * 0.8;
+        const bgX = (width - bgWidth) / 2;
+        const bgY = (height - bgHeight) / 2;
+
+        // Mettre à jour l'arrière-plan
+        const background = this.craftingContainer.list.find((child) => child instanceof Phaser.GameObjects.Rectangle);
+        if (background) {
+            background.setSize(bgWidth, bgHeight);
+            background.setPosition(bgX + bgWidth / 2, bgY + bgHeight / 2);
+        }
+
+        // Mettre à jour le titre
+        const title = this.craftingContainer.list.find((child) => child instanceof Phaser.GameObjects.Text);
+        if (title) {
+            title.setPosition(bgX + bgWidth / 2, bgY + 20);
+        }
+
+        // Mettre à jour les emplacements de recettes
+        const padding = 20;
+        const startX = bgX + padding;
+        const startY = bgY + 100;
+
+        this.recipeSlots.forEach((slotObj, index) => {
+            const slotY = startY + index * (this.slotHeight + padding);
+            const slot = slotObj.container;
+
+            slot.setPosition(bgX + bgWidth / 2, slotY);
+
+            const recipeBackground = slotObj.recipeBackground;
+            recipeBackground.setDisplaySize(bgWidth * 0.9, this.slotHeight);
+
+            //this.updateCraftingUI();
+        });
+
+        // Mettre à jour le masque
+        if (this.maskZone) {
+            this.maskZone.setPosition(bgX + bgWidth / 2, bgY + bgHeight / 2);
+            this.maskZone.setSize(bgWidth, bgHeight);
+            this.craftingContainer.setMask(this.maskZone.createGeometryMask());
+        }
+
+        // Mettre à jour les dimensions visibles
+        this.viewHeight = height;
+        this.contentHeight = this.recipeSlots.length * (this.slotHeight + padding);
+        this.updateScroll(); // Réappliquer le défilement
     }
 }
