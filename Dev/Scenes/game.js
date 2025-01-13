@@ -38,6 +38,10 @@ export class GameScene extends Phaser.Scene {
         //ressources
         this.load.image("wood", "/assets/wood.png");
         this.load.image("stone", "/assets/stone.png");
+        this.load.image("stick", "/assets/stick.png");
+        this.load.image("plank", "/assets/plank.png");
+        this.load.image("ironOre", "/assets/ironOre.png");
+        this.load.image("ironIngot", "/assets/ironIngot.png");
         this.load.image("meat", "/assets/meat.png");
         
         //tools

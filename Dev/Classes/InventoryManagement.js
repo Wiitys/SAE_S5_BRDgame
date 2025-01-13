@@ -30,7 +30,7 @@ export default class Inventory {
         return {
             stick: new Craftable("Ressource", "stick", 2, { wood: 1 }),
             plank: new Craftable("Ressource", "plank", 4, { wood: 2 }),
-            ironIngot: new Craftable("Ressource", "ironIngot", 1, { moltenIron: 2 }),
+            ironIngot: new Craftable("Ressource", "ironIngot", 1, { ironOre: 2 }),
             woodenAxe: new Craftable("Tool", "woodenAxe", 1, { plank: 3, stick: 2 }),
             woodenPickaxe: new Craftable("Tool", "woodenPickaxe", 1, { plank: 3, stick: 2 }),
             stoneAxe: new Craftable("Tool", "stoneAxe", 1, { stone: 3, stick: 2 }),
