@@ -137,7 +137,7 @@ async function getEnemies() {
             FROM 
                 Enemies e
             JOIN 
-                dropTypeMobs dtm ON f.id_enemy = dtm.id_enemy    
+                dropTypeMobs dtm ON e.id_enemy = dtm.id_enemy    
             LEFT JOIN 
                 Ressources r ON dtm.id_ressource = r.id_ressource;
         `);
