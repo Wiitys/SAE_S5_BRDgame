@@ -136,8 +136,10 @@ async function getEnemies() {
                 r.value_food AS dropValue
             FROM 
                 Enemies e
+            JOIN 
+                dropTypeMobs dtm ON f.id_enemy = dtm.id_enemy    
             LEFT JOIN 
-                Ressources r ON e.id_ressource = r.id_ressource;
+                Ressources r ON dtm.id_ressource = r.id_ressource;
         `);
 
         results.forEach(enemy => {
