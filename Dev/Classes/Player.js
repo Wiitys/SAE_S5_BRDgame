@@ -192,7 +192,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         const { centerX, centerY } = this.getBounds();
     
         // Obtenir l'angle d'attaque en fonction de la dernière direction
-        const attackRotation = this.getAttackRotation();
+        const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
     
         // Calculer la position de l'animation (sommet du cône au centre du personnage)
         const animationX = centerX;
@@ -251,9 +251,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             }
         });
     }
-  
-
-
 
   rangedAttack(attackRange, attackDamageEntities) {
 
@@ -322,8 +319,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dy = pointerWorldY - this.y;
 
     // Retourner l'angle entre le joueur et la souris
-    return Math.atan2(dy, dx);
-  }
+    return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
+}
   
   // Gestion des réductions de dommage
   takeDamage(attackDamage) {
@@ -339,7 +336,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       target.takeDamage(attackDamageEntities); 
     }
     else{
-      this.scene.hitFarmable(this, target, attackDamageFarmables);
+      console.log(target)
+      this.scene.hitFarmable(target, attackDamageFarmables);
     }
   }
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const mysql = require('mysql2'); // Import du module MySQL
 const app = express();
 const server = http.createServer(app);
 const path = require('path');
@@ -26,10 +27,366 @@ const ENEMY_RESPAWN_TIME = 5000;
 // Remonter d'un niveau avec '..' pour accéder au dossier 'Dev'
 app.use(express.static(path.join(__dirname, '..', 'Dev')));
 
+// Middleware pour le JSON
+app.use(express.json());
+
 // Fallback pour index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'Dev', 'index.html'));
 });
+
+// Configuration de la base de données
+const db = mysql.createConnection({
+    host: 'db', // Nom du conteneur Docker pour MySQL
+    user: 'root',
+    password: 'SAE_BRDGame',
+    database: 'game_database',
+});
+
+connectToDatabase();
+
+// Fonction pour tenter la connexion à la base de données
+function connectToDatabase(retries = 5, delay = 5000) {
+    db.promise().connect()
+        .then(() => {
+            console.log('Connecté à la base de données MySQL');
+            // Récupération des données
+            getFarmables();
+            getCraftables();
+            getEnemies();
+            getRessources();
+            getTools();
+            getArmours();
+        })
+        .catch((err) => {
+            console.error('Erreur de connexion à la base de données :', err);
+
+            // Si des tentatives sont encore possibles, on réessaye
+            if (retries > 0) {
+                console.log(`Nouvelle tentative dans ${delay / 1000} secondes... (${retries} essais restants)`);
+                setTimeout(() => connectToDatabase(retries - 1, delay), delay);
+            } else {
+                console.error('Impossible de se connecter après plusieurs tentatives. Arrêt.');
+            }
+        });
+}
+
+// Fonction générique pour exécuter des requêtes
+function queryDatabase(query) {
+    return new Promise((resolve, reject) => {
+        db.query(query, (err, results) => {
+            if (err) {
+                console.error('Erreur lors de la requete :', err);
+                reject(err); // Rejeter la promesse en cas d'erreur
+            } else {
+                resolve(results); // Résoudre la promesse avec les résultats
+            }
+        });
+    });
+}
+
+let farmablesData = {};
+let craftablesData = {};
+let enemiesData = {};
+let armoursData = {};
+let ressourcesData = {};
+let toolsData = {};
+
+async function getRessources() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                r.id_ressource,
+                r.name_ressource,
+                r.category,
+                r.value_food
+            FROM 
+                Ressources r;
+        `);
+
+        results.forEach(ressource => {
+            const { id_ressource, name_ressource, category, value_food } = ressource;
+
+            ressourcesData[id_ressource] = {
+                name: name_ressource,
+                category : category,
+                valueFood: value_food
+            };
+        });
+
+        console.log(ressourcesData);
+
+        return ressourcesData;
+    } catch (error) {
+        console.error('Error fetching resources:', error);
+    }
+}
+
+async function getEnemies() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                e.name_enemy,
+                e.healthPoints AS hp,
+                e.type,
+                e.behavior,
+                e.attackRange,
+                e.searchRange,
+                e.actionDelay,
+                r.category AS dropCategory,
+                r.name_ressource AS dropType,
+                r.value_food AS dropValue
+            FROM 
+                Enemies e
+            JOIN 
+                dropTypeMobs dtm ON e.id_enemy = dtm.id_enemy    
+            LEFT JOIN 
+                Ressources r ON dtm.id_ressource = r.id_ressource;
+        `);
+
+        results.forEach(enemy => {
+            const { name_enemy, hp, type, behavior, attackRange, searchRange, actionDelay, dropCategory, dropType, dropValue } = enemy;
+            if(!enemiesData[name_enemy]){
+                enemiesData[name_enemy] = {
+                    hp : hp,
+                    type : type,
+                    behavior : behavior,
+                    attackRange : attackRange,
+                    searchRange : searchRange,
+                    actionDelay : actionDelay,
+                    drops: []
+                };
+            }
+            
+            enemiesData[name_enemy].drops.push({ dropType, dropCategory, dropValue });
+        });
+
+        console.log(enemiesData);
+
+        return enemiesData;
+    } catch (error) {
+        console.error('Error fetching enemies:', error);
+    }
+}
+
+
+async function getFarmables() {
+    try {
+        // Attendre que la promesse renvoyée par queryDatabase se résolve
+        const results = await queryDatabase(`
+            SELECT 
+                f.id_farmable,
+                f.type, 
+                f.healthPoints as hp,
+                r.category as dropCategory,  
+                r.name_ressource as dropType,
+                r.value_food as dropValue
+            FROM 
+                Farmables f
+            JOIN 
+                dropTypeFarm dtf ON f.id_farmable = dtf.id_farmable
+            JOIN 
+                Ressources r ON dtf.id_ressource = r.id_ressource;
+        `);
+
+        // Parcours des résultats et regroupement des données
+        results.forEach(farmable => {
+            const { id_farmable, type, hp, dropType, dropCategory, dropValue } = farmable;
+
+            // Si le farmable n'existe pas encore dans farmablesData, on le crée
+            if (!farmablesData[id_farmable]) {
+                farmablesData[id_farmable] = {
+                    type: type,
+                    hp: hp,
+                    drops: []  // Tableau pour contenir les drops
+                };
+            }
+
+            // Ajouter le drop au tableau "drops" pour ce farmable
+            farmablesData[id_farmable].drops.push({ dropType, dropCategory, dropValue });
+        });
+
+        console.log(farmablesData);
+
+        createInitialFarmables()
+    } catch (err) {
+        console.error('Erreur lors de la récupération des farmables :', err);
+    }
+}
+
+async function getCraftables() {
+    try {
+        // Attendre que la promesse renvoyée par queryDatabase se résolve
+        const results = await queryDatabase(`
+            SELECT 
+                c.id_craft AS id,
+                CASE
+                    WHEN t.name_tool IS NOT NULL THEN 'Tool'
+                    WHEN a.name_armour IS NOT NULL THEN 'Armour'
+                    ELSE 'Ressource'
+                END AS category,
+                c.name_craft AS name,
+                c.quantity_out AS quantity_out,
+                CONCAT(
+                    '{',
+                    GROUP_CONCAT(
+                        CASE
+                            WHEN cr.name_ressource IS NOT NULL THEN 
+                                CONCAT(cr.name_ressource, ': ', cr_c.quantity_needed)
+                            ELSE NULL
+                        END
+                        SEPARATOR ', '
+                    ),
+                    IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM CraftToolWithTool sub_ctwt
+                            WHERE sub_ctwt.id_craft = c.id_craft
+                        ),
+                        CONCAT(', ',
+                            GROUP_CONCAT(
+                                CASE
+                                    WHEN t_c.name_tool IS NOT NULL THEN 
+                                        CONCAT(t_c.name_tool, ': ', ctwt.quantity_needed)
+                                    ELSE NULL
+                                END
+                                SEPARATOR ', '
+                            )
+                        ),
+                        ''
+                    ),
+                    IF(
+                        EXISTS (
+                            SELECT 1
+                            FROM CraftArmourWithArmour sub_cawa
+                            WHERE sub_cawa.id_craft = c.id_craft
+                        ),
+                        CONCAT(', ',
+                            GROUP_CONCAT(
+                                CASE
+                                    WHEN a_c.name_armour IS NOT NULL THEN 
+                                        CONCAT(a_c.name_armour, ': ', cawa.quantity_needed)
+                                    ELSE NULL
+                                END
+                                SEPARATOR ', '
+                            )
+                        ),
+                        ''
+                    ),
+                    '}'
+                ) AS recipe
+            FROM Crafts c
+            LEFT JOIN CraftRessources cr_c ON c.id_craft = cr_c.id_craft
+            LEFT JOIN Ressources cr ON cr_c.id_ressource = cr.id_ressource
+            LEFT JOIN Ressources r ON c.id_craft = r.id_ressource
+            LEFT JOIN CraftToolWithTool ctwt ON c.id_craft = ctwt.id_craft
+            LEFT JOIN Tools t ON c.id_craft = t.id_craft AND t.is_craftable = TRUE
+            LEFT JOIN Tools t_c ON t_c.id_tool = ctwt.id_tool AND t.is_craftable = TRUE
+            LEFT JOIN CraftArmourWithArmour cawa ON cawa.id_craft = c.id_craft
+            LEFT JOIN Armour a ON c.id_craft = a.id_craft AND a.is_craftable = TRUE
+            LEFT JOIN Armour a_c ON a_c.id_armour = cawa.id_armour AND a_c.is_craftable = TRUE
+            GROUP BY c.id_craft, category, c.name_craft, c.quantity_out
+            HAVING recipe IS NOT NULL;
+        `);
+
+        // Parcours des résultats et regroupement des données
+        results.forEach(craftable => {
+            const { id, category, name, quantity_out, recipe } = craftable;
+
+            // Si le farmable n'existe pas encore dans craftablesData, on le crée
+            if (!craftablesData[name]) {
+                craftablesData[name] = {
+                    category: category,
+                    type: name,
+                    quantity: quantity_out,
+                    recipe: recipe
+                };
+            }
+        });
+
+        console.log(craftablesData);
+
+    } catch (err) {
+        console.error('Erreur lors de la récupération des craftables :', err);
+    }
+}
+
+
+async function getTools() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                t.id_tool,
+                t.name_tool,
+                t.is_craftable,
+                t.range_tool,
+                t.angle,
+                t.farmableDamage,
+                t.attackDamage,
+                c.id_craft
+            FROM 
+                Tools t
+            JOIN 
+                Crafts c ON t.id_craft = c.id_craft;
+        `);
+
+        results.forEach(tool => {
+            const { id_tool, name_tool, is_craftable, range_tool, angle, farmableDamage, attackDamage, id_craft } = tool;
+
+            toolsData[id_tool] = {
+                name: name_tool,
+                isCraftable: is_craftable,
+                rangeTool: range_tool,
+                angle : angle,
+                farmableDamage : farmableDamage,
+                attackDamage : attackDamage,
+                craftId: id_craft
+            };
+        });
+
+        console.log(toolsData);
+
+        return toolsData;
+    } catch (error) {
+        console.error('Error fetching tools:', error);
+    }
+}
+
+async function getArmours() {
+    try {
+        const results = await queryDatabase(`
+            SELECT 
+                a.id_armour,
+                a.name_armour,
+                a.is_craftable,
+                a.effect,
+                a.resistance,
+                c.id_craft
+            FROM 
+                Armour a
+            JOIN 
+                Crafts c ON a.id_craft = c.id_craft;
+        `);
+
+        results.forEach(armour => {
+            const { id_armour, name_armour, is_craftable, effect, resistance, id_craft } = armour;
+
+            armoursData[id_armour] = {
+                name: name_armour,
+                isCraftable: is_craftable,
+                effect : effect,
+                resistance : resistance,
+                craftId: id_craft
+            };
+        });
+
+        console.log(armoursData);
+
+        return armoursData;
+    } catch (error) {
+        console.error('Error fetching armours:', error);
+    }
+}
 
 const ioServer = new socketIO.Server(server, {
     cors: {
@@ -44,11 +401,11 @@ server.listen(3000, () => {
     console.log('Server is listening on port 3000');
 });
 
-createInitialFarmables()
 loadFarmablesFromMap()
 loadMonsterSpawns()
+
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
-createEnemy(0, 0, 'boss','aggressive', undefined, 200, 300)
+//createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1, value: 0}, {category: 'Ressource', type: 'stone', quantity: 1, value: 0}, {category: 'Food', type: 'meat', quantity: 1, value: 20}])
 
 ioServer.on('connection', (socket) => {
     
@@ -56,6 +413,11 @@ ioServer.on('connection', (socket) => {
     
     console.log(`A player connected: ${socket.id}`);
     
+    socket.on('getCraftables', () => {
+        console.log(craftablesData)
+        socket.emit('getCraftables', craftablesData);
+    })
+
     socket.on('updatePlayers', function(data){
         for(player of players) {
             if(player.id == socket.id) {
@@ -125,7 +487,7 @@ ioServer.on('connection', (socket) => {
     });
     
     socket.on('createDrop', (drop) => {
-        createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y);
+        createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y);
         console.log(`create drop ${drop.quantity}`)
     });
 
@@ -200,15 +562,25 @@ function generateUniqueEnemyId() {
 }
 
 // Fonction pour créer un farmable
-function createFarmable(type, x, y) {
-    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, hp: 10 };
+function createFarmable(type, x, y, dropsData, maxHp) {
+    const farmable = { id: generateUniqueFarmableId(), type: type, x: x, y: y, maxHp: maxHp, hp: maxHp, drops: dropsData};
+    console.log(farmable)
     farmables.push(farmable);
     ioServer.emit('farmableCreated', farmable);
 }
 
 function createInitialFarmables() {
-    farmables.push({ id: generateUniqueFarmableId(), type: "tree", x: 200, y: 200, hp: 10 });
-    farmables.push({ id: generateUniqueFarmableId(), type: "rock", x: 300, y: 300, hp: 10 });
+    let x = 100;
+    let y = 0;
+
+    Object.values(farmablesData).forEach(farmable => {
+
+        // Appeler la fonction pour créer le farmable
+        createFarmable(farmable.type, x, y, farmable.drops, farmable.hp);  // Passer les drops en paramètre
+        x+=100;
+    });
+  
+    
 }
 
 function loadFarmablesFromMap() {
@@ -251,27 +623,32 @@ function destroyFarmable(farmableId, index){
     
     // Informer tous les clients de la destruction
     ioServer.emit('farmableDestroyed', farmableId);
-    
+    console.log(farmable.drops)
     // Réapparition après un délai
     setTimeout(() => {
-        createFarmable(farmable.type, farmable.x, farmable.y);
+        createFarmable(farmable.type, farmable.x, farmable.y, farmable.drops, farmable.maxHp);
     }, FARMABLE_RESPAWN_TIME);
 }
 
 function destroyEnemy(index){
     // Informer tous les clients de la destruction
-    ioServer.emit('enemyDied', enemies[index].id);
+    ioServer.emit('enemyDied', enemies[index].id, );
+
+    enemies[index].dropList.forEach(drop => {
+        createDrop(drop.category, drop.type, drop.quantity, drop.value, enemies[index].x, enemies[index].y);
+    });
+
     const enemy = enemies.splice(index, 1)[0];
-    console.log(enemy)
+
     // Réapparition après un délai
     setTimeout(() => {
-        createEnemy(enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay);
+        createEnemy(enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay, enemy.dropList);
     }, ENEMY_RESPAWN_TIME);
 }
 
 // Fonction pour créer une drop
-function createDrop(category, type, quantity, x, y) {
-    const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, x: x, y: y };
+function createDrop(category, type, quantity, value, x, y) {
+    const drop = { id: generateUniqueDropId(), category: category, type: type, quantity: quantity, value: value, x: x, y: y };
     drops.push(drop);
     ioServer.emit('dropCreated', drop);
 }
@@ -317,7 +694,7 @@ function createProjectile(x,y,targetX,targetY,speed,rotation,ownerId,attackDamag
     }
 
 
-    function createEnemy(name, x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000) {
+function createEnemy(name, x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000, dropList=[]) {
     enemyData = { 
         id: generateUniqueEnemyId(), 
         name: name,
@@ -344,7 +721,8 @@ function createProjectile(x,y,targetX,targetY,speed,rotation,ownerId,attackDamag
             { x: x, y: y } // Retour à la position de départ
         ],
         currentPatrolIndex: 0,
-        isPatrolling: true
+        isPatrolling: true,
+        dropList: dropList
     }
 
     enemies.push(enemyData);
@@ -516,7 +894,6 @@ setInterval(() => {
 
 function bossBehavior(enemy){
     // Calcule la distance entre l'ennemi et le joueur
-
     let dx = enemy.target.x - enemy.x;
     let dy = enemy.target.y - enemy.y;
     const distanceToTarget = Math.sqrt((dx)**2 + (dy)**2);
@@ -552,29 +929,37 @@ function bossBehavior(enemy){
                 console.log("Code exécuté après x secondes.");
                 if(enemy.target && enemy.hp > 0 && !enemy.isPatrolling){
                     console.log('entré dans le if')
-                    if(distanceToTarget <= enemy.minAttackRange){
-                        //combo melee
-                        //shootAround(enemy);
-                        console.log('melee')
-                        //enemy.isAttacking = false
-                    } else if(distanceToTarget <= enemy.AttackRange && distanceToTarget > enemy.minAttackRange) {
-                        //tir laser OU charge
-                        //shootAround(enemy);
-                        console.log('laser')
-                        dx = 0;
-                        dy = 0;
-                        //enemy.isAttacking = false
-                    } else if(distanceToTarget <= enemy.maxAttackRange && distanceToTarget > enemy.attackRange){
-                        //tir circulaire
+                    // if(distanceToTarget <= enemy.minAttackRange){
+                    //     //combo melee
+                    //     //shootAround(enemy);
+                    //     console.log('melee')
+                    //     enemy.isAttacking = false
+                    if(distanceToTarget <= enemy.maxAttackRange /*&& distanceToTarget > enemy.minAttackRange*/ ){
+                        chooseRandomAttack(enemy)
+
+                        //tir circulaire ou laser
                         console.log('shoot')
                         dx = 0;
                         dy = 0;
-                        shootAround(enemy);
                     }
                 }
+                //enemy.isAttacking = false;
             }, enemy.actionDelay);
         }
     }
+}
+
+function chooseRandomAttack(enemy) {
+    const bossRangedAttacks = [
+        shootAround,          // Fonction pour l'attaque circulaire
+        rayAttack,            // Fonction pour l'attaque en rayon
+    ];
+
+    const randomIndex = Math.floor(Math.random() * bossRangedAttacks.length);
+    const selectedAttack = bossRangedAttacks[randomIndex];
+
+    // Exécuter l'attaque choisie
+    selectedAttack(enemy);
 }
 
 // Lorsque le boss attaque, on crée des projectiles autour de lui
@@ -584,16 +969,15 @@ function shootAround(enemy) {
 
     const shootInterval = setInterval(() => {
         // Angles pour les projectiles autour du boss
-        const angles = [
+        let angles = [
             0 + offset, 
-            Math.PI / 4 + offset, 
-            Math.PI / 2 + offset, 
-            3 * Math.PI / 4 + offset, 
+            Math.PI / 3 + offset, 
+            (2 * Math.PI) / 3 + offset, 
             Math.PI + offset, 
-            -3 * Math.PI / 4 + offset, 
-            -Math.PI / 2 + offset, 
-            -Math.PI / 4 + offset
+            -(2 * Math.PI) / 3 + offset, 
+            -Math.PI / 3 + offset
         ];
+        
 
         // Créer des projectiles pour chaque angle
         angles.forEach(angle => {
@@ -614,6 +998,78 @@ function shootAround(enemy) {
             enemy.isAttacking = false
         }
     }, 1000); // Répéter l'attaque toutes les 0.5 secondes
+}
+
+function rayAttack(enemy) {
+    console.log("Le boss utilise RayAttack !");
+    
+    // Longueur et largeur du rayon
+    const rayLength = 500;
+    const rayWidth = 50;
+
+    // Calculer la direction du rayon vers la cible
+    const dx = enemy.target.x - enemy.x;
+    const dy = enemy.target.y - enemy.y;
+    const distance = Math.sqrt(dx ** 2 + dy ** 2);
+
+    // Normaliser le vecteur direction pour obtenir un déplacement unitaire
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+    
+    // Calculer les points de départ et de fin du rayon
+    const rayStartX = enemy.x;
+    const rayStartY = enemy.y;
+    const rayEndX = rayStartX + directionX * rayLength;
+    const rayEndY = rayStartY + directionY * rayLength;
+
+    console.log(rayStartX,
+        rayStartY,
+        rayEndX,
+        rayEndY)
+
+    // Informer les clients de l'avertissement (zone d'effet)
+    ioServer.emit("rayWarning", {
+        x: rayStartX,
+        y: rayStartY,
+        endX: rayEndX,
+        endY: rayEndY,
+        width: rayWidth,
+        duration: 1000 // Temps avant l'attaque
+    });
+
+    // Déclencher l'attaque après l'avertissement
+    setTimeout(() => {
+        ioServer.emit("rayAttack", {
+            x: rayStartX,
+            y: rayStartY,
+            endX: rayEndX,
+            endY: rayEndY,
+            width: rayWidth
+        });
+
+        // Vérifier si des joueurs sont touchés
+        players.forEach(player => {
+            if (isPlayerHitByRay(player, rayStartX, rayStartY, rayEndX, rayEndY, rayWidth)) {
+                console.log(`Joueur ${player.id} touché par RayAttack !`);
+                player.health -= 10;
+                ioServer.emit("playerHit", {targetId: player.id, damage: 10 });
+            }
+        });
+        enemy.isAttacking = false
+    }, 1000); // Délai de 1 seconde
+}
+
+function isPlayerHitByRay(player, rayStartX, rayStartY, rayEndX, rayEndY, rayWidth) {
+    const playerX = player.x;
+    const playerY = player.y;
+
+    // Calculer la distance du joueur à la ligne du rayon
+    const distance = Math.abs(
+        (rayEndY - rayStartY) * playerX - (rayEndX - rayStartX) * playerY + rayEndX * rayStartY - rayEndY * rayStartX
+    ) / Math.sqrt((rayEndY - rayStartY) ** 2 + (rayEndX - rayStartX) ** 2);
+
+    // Vérifier si le joueur est à l'intérieur de la largeur du rayon
+    return distance <= rayWidth / 2;
 }
 
 
@@ -640,6 +1096,7 @@ function aggressiveBehavior(enemy){
 
     // Arrête l'ennemi s'il est à moins de sa range du joueur
     } else if (distanceToTarget < enemy.attackRange) {
+        enemy.isPatrolling = false;
         if (distanceToTarget < enemy.minAttackRange) {
             dx = 0
             dy = 0
@@ -652,8 +1109,10 @@ function aggressiveBehavior(enemy){
             setTimeout(() => {
                 console.log("Code exécuté après x secondes.");
                 if(enemy.target && enemy.hp > 0 && distanceToTarget <= enemy.maxAttackRange && !enemy.isPatrolling){
+                    console.log('rentré dans le if')
                     createProjectile(enemy.x, enemy.y, enemy.target.x, enemy.target.y, 100, 0, enemy.id, 5)
                 }
+                console.log('sorti dans le if')
                 enemy.isAttacking = false
             }, enemy.actionDelay);
         }
@@ -683,6 +1142,7 @@ function neutralBehavior(enemy){
 
     // Arrête l'ennemi s'il est à moins de sa range du joueur
     } else if (distanceToTarget < enemy.attackRange && enemy.isHit) {
+        enemy.isPatrolling = false;
         if (distanceToTarget < enemy.minAttackRange) {
             dx = 0
             dy = 0
