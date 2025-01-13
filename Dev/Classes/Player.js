@@ -13,8 +13,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.setDisplaySize(32, 32);
     this.body.allowGravity = false;
+    this.setDepth(1);
     this.id = socket.id
-    console.log(this.id)
     // Paramètres et contrôles du joueur
     this.isPlayer = true;
     this.damageReduction = 0;
@@ -22,13 +22,27 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastDirection = "up";
     this.equippedTool = null;
     this.toolSprite = null;
-    this.attackAngle = 0;
     this.cursor = scene.input.keyboard.createCursorKeys();
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
+
+    const config = {
+      width: this.scene.cameras.main.width/4,
+      height: this.scene.cameras.main.height/40,
+      x: this.scene.cameras.main.width/2 - (this.scene.cameras.main.width/4)/2,
+      y: 100,
+      background: {
+        color: 0xff0000,
+      },
+      bar: {
+        color: 0xf7bc00,
+      },
+    };
+    this.foodometer = new HealthBar(scene, config, 45, 45);
+    this.startHungerManagement();
 
     // Paramètres d'attaque en cône
     this.attackConeAngle = Phaser.Math.DegToRad(45);
@@ -73,6 +87,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       frameRate: 10,
       repeat: -1
     });
+
+    this.scene.anims.create({
+      key: 'slash',
+      frames: this.anims.generateFrameNumbers('sword_slash', { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: 0
+  });
   }
 
   // Gérer les mouvements du joueur
@@ -116,7 +137,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.playAnimation();
     }
   }
-
+  
   // Méthode pour informer le serveur
   updateServerDirection() {
     socket.emit("playerDirectionChanged", {
@@ -161,57 +182,75 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
   // Méthode de gestion d'attaque en cône
-  attackCone(attackRange = this.attackRange, attackConeAngle = this.attackConeAngle, attackDamageFarmables = this.attackDamageFarmables, attackDamageEntities = this.attackDamageEntities) {
-
-    // Calculer le centre de la hitbox du joueur
-    const { centerX, centerY } = this.getBounds();
-
-    // Obtenir l'angle d'attaque en fonction de la dernière direction
-    const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
-
-    // Afficher le cône d'attaque
-    this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
-
-    // Liste des cibles potentielles
-    const farmables = this.scene.farmableGroup.getChildren();
+  attackCone(
+      attackRange = this.attackRange, 
+      attackConeAngle = this.attackConeAngle, 
+      attackDamageFarmables = this.attackDamageFarmables, 
+      attackDamageEntities = this.attackDamageEntities
+    ) {
+        // Calculer le centre de la hitbox du joueur
+        const { centerX, centerY } = this.getBounds();
     
-    // Vérifier les collisions dans le cône pour chaque type de cible
-    farmables.forEach(target => {
-      // Obtenir les coins de la bounding box de la cible
-      const targetBounds = target.getBounds();
-      const targetPoints = [
-        { x: targetBounds.left, y: targetBounds.top },    // coin supérieur gauche
-        { x: targetBounds.right, y: targetBounds.top },   // coin supérieur droit
-        { x: targetBounds.right, y: targetBounds.bottom }, // coin inférieur droit
-        { x: targetBounds.left, y: targetBounds.bottom }  // coin inférieur gauche
-      ];
-
-      // Vérifier si au moins un point de la bounding box est dans le cône
-      const isTargetInCone = targetPoints.some(point => {
-        const dx = point.x - centerX;
-        const dy = point.y - centerY;
-        const distance = Phaser.Math.Distance.Between(centerX, centerY, point.x, point.y);
-
-        // Vérifier la distance par rapport au range
-        if (distance <= attackRange) {
-          const TargetAngle = Math.atan2(dy, dx);
-          const angleDifference = Math.abs(Phaser.Math.Angle.Wrap(TargetAngle - attackRotation));
-
-          // Vérifier si le point est dans l'angle d'attaque
-          console.log('Angle cible:', TargetAngle, 'Angle attaque:', attackRotation, 'Différence:', angleDifference);
- 
-          return Math.abs(angleDifference) <= attackConeAngle / 2;
-        }
-        return false;
-      });
-
-      // Si la bounding box de la cible est dans le cône, appliquer l'attaque
-      console.log(isTargetInCone)
-      if (isTargetInCone) {
-        this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
-      }
-    });
-  }
+        // Obtenir l'angle d'attaque en fonction de la dernière direction
+        const [attackRotation, mouseX, mouseY] = this.getAttackRotation();
+    
+        // Calculer la position de l'animation (sommet du cône au centre du personnage)
+        const animationX = centerX;
+        const animationY = centerY;
+    
+        // Largeur du cône à sa portée maximale (arc arrondi)
+        const coneWidthAtRange = 2 * Math.tan(attackConeAngle / 2) * attackRange;
+    
+        // Ajuster l'échelle de l'animation
+        const animationScaleX = attackRange / 32; // Ajuster selon la hauteur (portée)
+        const animationScaleY = coneWidthAtRange / 32; // Ajuster selon la largeur du cône
+    
+        // **Afficher l'animation d'attaque**
+        const slash = this.scene.add.sprite(animationX, animationY, 'sword_slash');
+        
+        // Origine du sprite au sommet du cône
+        slash.setOrigin(0, 0.5); // Centre horizontalement, sommet du cône (en haut) pour que la base s'étende dans la direction de l'attaque
+        slash.setRotation(attackRotation); // Faire pivoter l'animation pour qu'elle pointe dans la bonne direction
+        slash.setScale(animationScaleX, animationScaleY); // Ajuster l'échelle en fonction du cône
+        slash.play('slash'); // Jouer l'animation définie
+    
+        // Détruire le sprite après l'animation
+        slash.on('animationcomplete', () => {
+            slash.destroy();
+        });
+    
+        // **Afficher le cône d'attaque pour le débogage**
+        this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
+    
+        // Vérifier les collisions dans le cône
+        const farmables = this.scene.farmableGroup.getChildren();
+        farmables.forEach(target => {
+            const targetBounds = target.getBounds();
+            const targetPoints = [
+                { x: targetBounds.left, y: targetBounds.top },
+                { x: targetBounds.right, y: targetBounds.top },
+                { x: targetBounds.right, y: targetBounds.bottom },
+                { x: targetBounds.left, y: targetBounds.bottom }
+            ];
+    
+            const isTargetInCone = targetPoints.some(point => {
+                const dx = point.x - centerX;
+                const dy = point.y - centerY;
+                const distance = Phaser.Math.Distance.Between(centerX, centerY, point.x, point.y);
+    
+                if (distance <= attackRange) {
+                    const targetAngle = Math.atan2(dy, dx);
+                    const angleDifference = Math.abs(Phaser.Math.Angle.Wrap(targetAngle - attackRotation));
+                    return angleDifference <= attackConeAngle / 2;
+                }
+                return false;
+            });
+    
+            if (isTargetInCone) {
+                this.hitTarget(target, attackDamageFarmables, attackDamageEntities);
+            }
+        });
+    }
 
   rangedAttack(attackRange, attackDamageEntities) {
 
@@ -244,28 +283,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       ownerId: socket.id,
       attackDamageEntities: attackDamageEntities
     });
-
-    // Liste des cibles potentielles (désactivé ici, mais peut être activé si besoin)
-    /*
-    const players = this.scene.otherPlayerSprites;
-    players.forEach(target => {
-      this.scene.physics.add.collider(projectile, target, () => {
-        // Actions lors de la collision avec la cible
-        if (target.takeDamage) {
-            target.takeDamage(attackDamageEntities); // Inflige des dégâts si la cible a une méthode `takeDamage`
-        }
-        projectile.destroy(); // Détruit le projectile après avoir touché la cible
-        console.log('cible touchée');
-      });
-    });
-    
-
-    // Détruire le projectile après un délai s'il ne touche rien
-    this.scene.time.delayedCall(3000, () => {
-      if (projectile.active) {
-        projectile.destroy();
-      }
-    });*/
 }
 
 
@@ -288,6 +305,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.time.delayedCall(200, () => this.attackConeGraphic.clear(), [], this);
   }
 
+    // Calculer l’angle d’attaque basé sur la dernière direction
   getAttackRotation() {
     const pointer = this.scene.input.activePointer; // Récupère la position de la souris
     const camera = this.scene.cameras.main; // Récupère la caméra principale
@@ -303,21 +321,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Retourner l'angle entre le joueur et la souris
     return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
 }
-
-  
-  // Interaction avec les farmables
-  interactWithFarmable(farmableGroup) {
-      farmableGroup.children.each((farmableElement) => {
-        if (
-          Phaser.Geom.Intersects.RectangleToRectangle(
-            this.getBounds(),
-            farmableElement.getBounds()
-          )
-        ) {
-          this.scene.hitFarmable(farmableElement);
-        }
-      });
-  }
   
   // Gestion des réductions de dommage
   takeDamage(attackDamage) {
@@ -341,7 +344,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   equipTool(tool) {
     this.equippedTool = tool;
     console.log(tool.type)
-    console.log(tool.isRanged)
     // Si un outil est déjà affiché, changez son sprite
     if (this.toolSprite) {
         this.toolSprite.setTexture(this.equippedTool.type);
@@ -364,22 +366,68 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  hungerManagement() {
+    if(this.foodometer.currentHealth > 0) {
+      this.foodometer.removeHealth(1)
+    } else {
+      this.playerHP.removeHealth(4)
+    }
+  }
+
+  startHungerManagement() {
+    this.foodometer.bar.setDepth(1);
+    this.foodometer.background.setDepth(1);
+
+    this.hungerInterval = setInterval(() => {
+        this.hungerManagement();
+    }, 10000); // 10 000 ms = 10 secondes
+
+    this.regenInterval = setInterval(() => {
+      if(this.foodometer.currentHealth >= 0.9*this.foodometer.maxHealth){
+        this.playerHP.addHealth(4)
+      }
+    }, 4000); // 10 000 ms = 10 secondes
+  }
+
+  stopHungerManagement() {
+    clearInterval(this.hungerInterval); // Arrête l'intervalle
+  }
+
+  eatFood() {
+    if(this.equippedTool.value && this.equippedTool.quantity > 0){
+      this.foodometer.addHealth(this.equippedTool.value);
+      this.equippedTool.quantity--;
+      this.scene.inventory.playerEat(this.equippedTool.type, 1);
+    }
+
+    if(this.equippedTool.quantity == 0){
+      this.unequipTool()
+    }
+  }
+
   update() {
     this.handleMovement();
-
-    this.attackAngle = this.getAttackRotation();
-
-
+    //lorsque l'objet est consommé le joueur ne peux pas attaquer sauf si il rééquipe un item
+    
     if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool) {
-        if(!this.equippedTool.isRanged) {
-          this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage)
-        } else {
-          this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage)
+      if(this.equippedTool){
+        switch (this.equippedTool.category){
+          case 'Tool':
+            this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
+            break;
+          case 'Food':
+            this.eatFood()
+            break;
+          case 'Ressource':
+            //??
+          default:
+            this.attackCone();
+            break;
         }
       } else {
         this.attackCone();
       }
+      
     }
 
     if(this.equippedTool){

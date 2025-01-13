@@ -5,6 +5,8 @@ const mysql = require('mysql2'); // Import du module MySQL
 const app = express();
 const server = http.createServer(app);
 const path = require('path');
+const fs = require('fs');
+
 
 var players = [];
 var farmables = [];
@@ -399,6 +401,8 @@ server.listen(3000, () => {
     console.log('Server is listening on port 3000');
 });
 
+loadFarmablesFromMap()
+loadMonsterSpawns()
 
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
 //createEnemy(0, 0, 'melee','aggressive', undefined, 200, 300, undefined, [{category: 'Ressource', type: 'stick', quantity: 1, value: 0}, {category: 'Ressource', type: 'stone', quantity: 1, value: 0}, {category: 'Food', type: 'meat', quantity: 1, value: 20}])
@@ -575,7 +579,43 @@ function createInitialFarmables() {
         createFarmable(farmable.type, x, y, farmable.drops, farmable.hp);  // Passer les drops en paramètre
         x+=100;
     });
+  
+    
 }
+
+function loadFarmablesFromMap() {
+    // Charger la carte JSON (Tiled exporté)
+    const mapData = JSON.parse(fs.readFileSync('map.json', 'utf8'));
+    console.log('Carte Tiled chargée :', mapData);  // Affichage de la carte complète pour le débogage
+
+    const farmablesFromMap = [];
+
+    // Accéder à la couche des objets (nom de la couche dans Tiled : 'Farmables')
+    const objectLayer = mapData.layers.find(layer => layer.name === 'Farmables');
+    if (objectLayer) {
+        
+        objectLayer.objects.forEach(obj => {
+            const farmableType = obj.properties.find(prop => prop.name === 'type')?.value || 'default';
+
+            const farmable = {
+                id: generateUniqueFarmableId(),
+                type: farmableType, 
+                x: obj.x,        
+                y: obj.y,        
+                hp: 10            
+            };
+
+            // Ajouter à la liste des farmables
+            farmablesFromMap.push(farmable);
+       });
+    } else {
+        console.log('La couche "Farmables" est introuvable dans la carte.');
+    }
+
+    // Ajouter les farmables extraits à la liste globale
+    farmables.push(...farmablesFromMap);
+}
+
 
 function destroyFarmable(farmableId, index){
     const farmable = farmables.splice(index, 1)[0];
@@ -630,10 +670,34 @@ function createProjectile(x,y,targetX,targetY,speed,rotation,ownerId,attackDamag
 
     ioServer.emit('projectileCreated', projectileData);
 }
+    function isPositionFree(x, y) {
+        const threshold = 32; // Distance minimale entre les entités (en pixels)
 
-function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000, dropList=[]) {
+        // Vérifier les ennemis existants
+        for (const enemy of enemies) {
+            const distance = Math.sqrt((enemy.x - x) ** 2 + (enemy.y - y) ** 2);
+            if (distance < threshold) {
+                return false; // Position trop proche d'un autre ennemi
+            }
+        }
+
+        // Vérifier les farmables existants
+        for (const farmable of farmables) {
+            const distance = Math.sqrt((farmable.x - x) ** 2 + (farmable.y - y) ** 2);
+            if (distance < threshold) {
+                return false; // Position trop proche d'un farmable
+            }
+        }
+
+        // Ajouter d'autres vérifications si nécessaire (ex. : obstacles, objets)
+        return true; // La position est libre
+    }
+
+
+function createEnemy(name, x, y, type = 'melee', behavior = 'aggressive', hp = 10, attackRange, searchRange, actionDelay = 3000, dropList=[]) {
     enemyData = { 
         id: generateUniqueEnemyId(), 
+        name: name,
         x: x, 
         y: y,
         spawnX: x,
@@ -641,7 +705,7 @@ function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, att
         type: type, 
         behavior: behavior, 
         maxHp: hp,
-        hp: hp, 
+        hp: hp,     
         target: null,
         attackRange: attackRange,
         maxAttackRange: attackRange*1.33,
@@ -665,6 +729,98 @@ function createEnemy(x, y, type = 'melee', behavior = 'aggressive', hp = 10, att
 
     ioServer.emit('enemyCreated', enemyData);
 }
+
+function createEnemyFromName(mobName, x, y) {
+    const mobConfig = {
+        Goblin: {
+            type: 'melee',
+            behavior: 'aggressive',
+            hp: 20,
+            attackRange: 50,
+            searchRange: 150,
+            actionDelay: 3000
+        },
+        Orc: {
+            type: 'melee',
+            behavior: 'aggressive',
+            hp: 50,
+            attackRange: 60,
+            searchRange: 200,
+            actionDelay: 4000
+        },
+        Archer: {
+            type: 'ranged',
+            behavior: 'aggressive',
+            hp: 15,
+            attackRange: 150,
+            searchRange: 300,
+            actionDelay: 2000
+        }
+    };
+
+    const mobData = mobConfig[mobName];
+    if (!mobData) {
+        console.error(`Erreur : aucune configuration trouvée pour le mob "${mobName}".`);
+        return;
+    }
+
+    createEnemy(mobName, x, y, mobData.type, mobData.behavior, mobData.hp, mobData.attackRange, mobData.searchRange, mobData.actionDelay);
+}
+
+function loadMonsterSpawns() {
+    const mapData = JSON.parse(fs.readFileSync('map.json', 'utf8'));
+    console.log('Carte Tiled chargée pour les spawns de monstres :', mapData);
+
+    // Trouver la couche "MonsterSpawns"
+    const spawnLayer = mapData.layers.find(layer => layer.name === 'MonsterSpawns');
+
+    if (spawnLayer) {
+        console.log('Layer "MonsterSpawns" trouvée:', spawnLayer);
+
+        spawnLayer.objects.forEach(obj => {
+            const mobName = obj.name; // Le nom du mob (ex : "Goblin", "Orc", etc.)
+            const spawnCount = obj.properties.find(prop => prop.name === 'spawnCount')?.value || 1;
+
+            console.log(`Zone de spawn pour le mob : ${mobName}, spawnCount=${spawnCount}, zone=(${obj.x}, ${obj.y}, ${obj.width}, ${obj.height})`);
+
+            // Vérifier si le mobName est valide avant de continuer
+            if (!mobName) {
+                console.error(`Erreur : aucun nom de mob défini pour l'objet de la zone (${obj.x}, ${obj.y}).`);
+                return;
+            }
+
+            // Créer plusieurs ennemis aléatoirement dans la zone
+            for (let i = 0; i < spawnCount; i++) {
+                let attempts = 0;
+                let maxAttempts = 10; // Nombre maximum de tentatives pour trouver une position disponible
+                let validPosition = false;
+
+                while (!validPosition && attempts < maxAttempts) {
+                    const randomX = obj.x + Math.random() * obj.width;
+                    const randomY = obj.y + Math.random() * obj.height;
+
+                    // Vérifier si la position est libre
+                    if (isPositionFree(randomX, randomY)) {
+                        console.log(`Position libre trouvée pour un ${mobName} : (${randomX}, ${randomY})`);
+                        createEnemyFromName(mobName, randomX, randomY);
+                        validPosition = true;
+                    } else {
+                        console.log(`Position occupée à (${randomX}, ${randomY}), nouvelle tentative...`);
+                        attempts++;
+                    }
+                }
+
+                if (!validPosition) {
+                    console.warn(`Impossible de trouver une position libre pour un ${mobName} après ${maxAttempts} tentatives.`);
+                }
+            }
+        });
+    } else {
+        console.log('La couche "MonsterSpawns" est introuvable dans la carte.');
+    }
+}
+
+
 
 function updateEnemies() {
     for (const id in enemies) {

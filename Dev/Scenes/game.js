@@ -3,61 +3,85 @@ import Drop from "../Classes/Drop.js";
 import Farmable from "../Classes/Farmable.js";
 import Craftable from "../Classes/Craftable.js";
 import Tool from "../Classes/Tool.js";
-import Inventory from "../Classes/Inventory.js";
+import Inventory from "../Classes/InventoryManagement.js";
+import InventoryUI from '../Classes/InventoryUI';
+import HotbarManagement from '../Classes/HotbarManagement.js';
+import HotbarUI from '../Classes/HotbarUI.js';
+import CraftingUI from '../Classes/CraftingUI.js'
+
 import Player from "../Classes/Player.js";
 import Ennemi from "../Classes/Ennemi.js";
 import OtherPlayer from "../Classes/OtherPlayer.js"
 import socket from '../Modules/socket.js';
 
+var otherPlayers;
+var otherPlayerSprites;
 var existingFarmables;
 var existingDrops;
 var existingProjectiles;
 var existingEnemies;
 
 export class GameScene extends Phaser.Scene {
-    constructor() {
-        super("scene-game");
-        this.cursor;
-        this.farmableGroup;
-        this.dropsGroup;
-        this.projectiles;
-        this.otherPlayers;
-        this.playersGroup;
-        this.enemiesGroup;
-    }
+  constructor() {
+    super("scene-game");
+    this.cursor;
+    this.farmableGroup;
+    this.dropsGroup;
+    this.projectiles;
+    this.otherPlayers;
+    this.playersGroup;
+    this.enemiesGroup;
+    this.backgroundMusicPlaying = false;
+  }
+	
+	preload() {
+    this.load.image('tiles', '/assets/map/Tiles.png');
+    this.load.tilemapTiledJSON('map', '/assets/map/map.json');
+    //load les sprites, sons, animations
+    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
     
-    preload() {
-        //load les sprites, sons, animations
-        this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-        
-        //Ennemis
-        this.load.image("ennemi", "/assets/ennemi.png");
-        this.load.image("projectileTexture", "/assets/projectileTexture.png");
-        this.load.image("meleeTexture", "/assets/meleeTexture.png");
-        
-        //farmables
-        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.image("rock", "/assets/rockSpritesheet.png");
-        this.load.image("ironOre", "/assets/ironOre.png");
-        this.load.image("goldOre", "/assets/goldOre.png");
-        
-        //ressources
-        this.load.image("wood", "/assets/wood.png");
-        this.load.image("stone", "/assets/stone.png");
-        this.load.image("meat", "/assets/meat.png");
-        this.load.image("apple", "/assets/apple.png");
-        this.load.image("iron", "/assets/iron.png");
-        this.load.image("gold", "/assets/gold.png");
-        
-        //tools
-        this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-        this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
-    }
+    //Ennemis
+    this.load.image("ennemi", "/assets/ennemi.png");
+    this.load.image("projectileTexture", "/assets/projectileTexture.png");
+    this.load.image("meleeTexture", "/assets/meleeTexture.png");
+
+    //farmables
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.image("rock", "/assets/rockSpritesheet.png", { frameWidth: 32, frameHeight: 32 });
+    this.load.image("ironOre", "/assets/ironOre.png");
+    this.load.image("goldOre", "/assets/goldOre.png");
+
+    //ressources
+    this.load.image("wood", "/assets/wood.png");
+    this.load.image("stone", "/assets/stone.png");
+    this.load.image("stick", "/assets/stick.png");
+    this.load.image("plank", "/assets/plank.png");
+    this.load.image("ironIngot", "/assets/ironIngot.png");
+    this.load.image("iron", "/assets/iron.png");
+    this.load.image("gold", "/assets/gold.png");
+    this.load.image("meat", "/assets/meat.png");
+    this.load.image("apple", "/assets/apple.png");
+
+    //tools
+    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+
+    // Charger les sons
+    this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
+  }
     
-    create() {
+  create() {
+        const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
         
+        const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
+    
+        const backgroundLayer = map.createLayer('top', tileset, 0, 0);
+        this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
         //créer les instances
-        this.player = new Player(this, 0, 0);
+        this.player = new Player(this, 20, 20);
+        this.player.setCollideWorldBounds(true);
         this.cursor = this.input.keyboard.createCursorKeys();
         this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
         
@@ -85,19 +109,35 @@ export class GameScene extends Phaser.Scene {
         this.syncEnemies()
         
         this.inventory = new Inventory(this);
+        this.inventoryUI = new InventoryUI(this, this.inventory);
+        this.craftingUI = new CraftingUI(this, this.inventory);
+        this.hotbarManagement = new HotbarManagement(this.inventory);
+        this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
         
         // Exemple : Ajouter des ressources pour tester
         this.inventory.addItem("Ressource", "wood", 10, 0);
         this.inventory.addItem("Ressource", "stone", 5, 0);
         
-        this.inventory.addItem("Tool", "stoneAxe", 1, 0);
-        this.inventory.addItem("Tool", "woodenPickaxe", 1, 0);
+        this.inventory.addItem("Tool", "stoneAxe", 1);
+        this.inventory.addItem("Tool", "woodenPickaxe", 1);
+
+        this.createMeat(50,50)
+
+        this.backgroundMusic = this.sound.add('backgroundMusic', {
+            volume: 0.33, // Ajuster le volume
+            loop: true,  // Activer la boucle
+        });
     }
     
     update() {
         // Gestion des mouvements du joueur
         this.player.update();
         this.updateOtherPlayers();
+
+        if (!this.backgroundMusicPlaying) {
+            this.backgroundMusic.play();
+            this.backgroundMusicPlaying = true; // Empêcher de rejouer
+        }
     }
     
     createEnemy(x, y, type, id) {
@@ -109,7 +149,6 @@ export class GameScene extends Phaser.Scene {
         if(type == 'boss'){
             enemy.setScale(2,2)
         }
-        
         console.log(enemy)
     }
     
@@ -167,6 +206,21 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
+    createMeat(x, y) {
+        const category = 'Food';
+        const dropType = 'meat';
+        
+        const dropQuantity = 1;
+        const drop = {
+            category: category,
+            type: dropType,
+            quantity: dropQuantity,
+            x: x,
+            y: y,
+        };
+        socket.emit('createDrop', drop);
+    }
+    
     farmableHalfHp(farmableElement, type){
         switch (type) {
             case "tree":
@@ -197,8 +251,13 @@ export class GameScene extends Phaser.Scene {
             dropElement,
             () => {
                 // Quand le joueur marche sur le drop, elle est collectée
-                this.collectDrop(dropElement.dropData, dropElement.id);
-                dropElement.destroy();
+                // Tente de collecter le drop
+                if (this.collectDrop(dropElement.dropData, dropElement.id)) {
+                    dropElement.destroy();
+                } else {
+                    dropElement.setTint(0xff0000); // Rougir temporairement pour indiquer l'échec
+                    this.time.delayedCall(200, () => dropElement.clearTint());
+                }
             },
             null,
             this
@@ -208,17 +267,22 @@ export class GameScene extends Phaser.Scene {
     collectDrop(drop, id) {
         // Ajouter des drops à la collecte globale
         if (drop.type) {
-            this.inventory.addItem(drop.category, drop.type, drop.quantity, drop.value)
-            this.inventory.updateInventoryText();
-            console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
-            socket.emit('collectDrop', id);
+            if (!this.inventory.isFull() || this.inventory.inventory[drop.type]) {
+                this.inventory.addItem(drop.category, drop.type, drop.quantity);
+                console.log(`${id} ${drop.category} ${drop.type} collectée: ${drop.quantity}, total: ${this.inventory.inventory[drop.type].item?.quantity}`);
+                socket.emit('collectDrop', id);
+                return true;
+            } else {
+                console.log(`Impossible de collecter ${drop.type}, inventaire plein.`);
+                return false;
+            }
         } else {
-            console.log(`drop ${drop.type} non définie.`);
+            console.log(`Drop ${drop.type} non défini.`);
+            return false;
         }
     }
     
-    updateOtherPlayers() {
-        // Nettoyage des anciens listeners pour éviter les doublons
+    updateOtherPlayers(){
         socket.off('updatePlayers');
         socket.off('playerHit');
         socket.off("updatePlayerDirection")
@@ -288,7 +352,6 @@ export class GameScene extends Phaser.Scene {
                         existingSprite.x = playerData.x;
                         existingSprite.y = playerData.y;
                         
-                        
                     }
                 }
             });
@@ -301,7 +364,6 @@ export class GameScene extends Phaser.Scene {
                 const playerSprite = this.playersGroup.getChildren().find(p => p.id === otherPlayer.id)
                 const exists = data.some(p => p.id === otherPlayer.id);
                 if (!exists) {
-                    
                     // Retire l'élément du tableau
                     this.otherPlayers.splice(i, 1);
                     this.playersGroup.remove(playerSprite)
