@@ -44,20 +44,20 @@ export default class Hotbar {
 
     createHotbar() {
         const hotbarY = this.scene.cameras.main.height - this.slotSize - 10; // Position verticale avec une marge
-        const totalWidth = this.manager.getNbSlots() * (this.slotSize + 4); // Largeur totale de la Hotbar
-        const startX = (this.scene.cameras.main.width - totalWidth) / 2; // Départ pour centrer la Hotbar
-
+        const slotSpacing = 4; // Espace entre les slots
+        const totalWidth = this.manager.getNbSlots() * this.slotSize + (this.manager.getNbSlots() - 1) * slotSpacing; // Largeur totale de la Hotbar avec espaces
+        const startX = (this.scene.cameras.main.width - totalWidth) / 2 + this.slotSize/2; // Point de départ pour centrer la Hotbar
+    
         for (let i = 0; i < this.manager.getNbSlots(); i++) {
-            const x = startX + i * (this.slotSize + 2); // Position de chaque slot
-
+            const x = startX + i * (this.slotSize + slotSpacing); // Position X de chaque slot
+    
             // Crée un slot graphique
             const slot = this.scene.add.rectangle(x, hotbarY, this.slotSize, this.slotSize, 0x444444)
                 .setStrokeStyle(2, i === this.selectedSlot ? 0xffff00 : 0xffffff)
                 .setScrollFactor(0); // Reste fixe à l'écran
-        
+    
             const itemSprite = this.scene.add.sprite(x, hotbarY, '').setDisplaySize(32, 32).setScrollFactor(0);
-
-
+    
             // Texte pour la quantité de l'objet (en bas à droite)
             const quantityText = this.scene.add.text(
                 x + this.slotSize / 2 - 5, // Position X : coin droit du slot
@@ -68,7 +68,7 @@ export default class Hotbar {
                     align: 'right'
                 }
             ).setOrigin(1, 1).setScrollFactor(0);
-
+    
             this.hotbarSlots.push({ slot, itemSprite, quantityText });
         }
     }
@@ -111,8 +111,7 @@ export default class Hotbar {
 
         const hotbarY = height - this.slotSize - 10; // Nouvelle position verticale
         const totalWidth = this.hotbarSlots.length * (this.slotSize + 4); // Largeur totale de la hotbar
-        const startX = (width - totalWidth) / 2; // Position de départ pour centrer
-
+        const startX = (width - totalWidth) / 2 + this.slotSize/2; // Position de départ pour centrer
         // Repositionne tous les éléments
         for (let i = 0; i < this.hotbarSlots.length; i++) {
             const x = startX + i * (this.slotSize + 2);
