@@ -116,12 +116,12 @@ export default class Hotbar {
         // Repositionne tous les éléments
         for (let i = 0; i < this.hotbarSlots.length; i++) {
             const x = startX + i * (this.slotSize + 2);
-            const { slot, nameText, quantityText } = this.hotbarSlots[i];
+            const { slot, itemSprite, quantityText } = this.hotbarSlots[i];
 
             slot.setPosition(x, hotbarY);
-            nameText.setPosition(
-                x - this.slotSize / 2 + 5, // Position X : à gauche dans le slot
-                hotbarY - this.slotSize / 2 + 5 // Position Y : en haut
+            itemSprite.setPosition(
+                x,
+                hotbarY
             );
             quantityText.setPosition(
                 x + this.slotSize / 2 - 5, // Position X : coin droit du slot
