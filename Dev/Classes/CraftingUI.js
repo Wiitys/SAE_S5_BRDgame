@@ -15,6 +15,10 @@ export default class CraftingUI {
         this.craftingContainer = this.scene.add.container(0, 0).setVisible(false).setScrollFactor(0);
         
         this.initUI();
+
+        this.scene.scale.on('resize', (gameSize) => {
+            this.onResize(gameSize);
+        });
     }
     
     initUI() {
@@ -95,7 +99,7 @@ export default class CraftingUI {
         this.craftingContainer.height = maxIndex * 128 + this.craftingContainer.list.reduce((totalHeight, child) => {
             return totalHeight + child.displayHeight;
         }, 0);
-        console.log('Nouvelle hauteur du conteneur:', this.craftingContainer.height);
+        //console.log('Nouvelle hauteur du conteneur:', this.craftingContainer.height);
     }
     
     handleCraftingScroll(pointer, gameObjects, deltaX, deltaY) {
@@ -152,7 +156,7 @@ export default class CraftingUI {
     updateCraftingUI() {
         let maxIndex = 0
         this.craftingButtons = []; // Tableau pour stocker les coordonnées des boutons de craft
-
+        
         this.recipeSlots.forEach((slotObj, index) => {
             const keys = Object.keys(this.craftables);
             const craftable = this.craftables[keys[index]];
@@ -279,5 +283,57 @@ export default class CraftingUI {
         // Retirer les événements pour éviter les conflits
         this.scene.input.off('pointerdown', this.handleCraftButtonClick, this);
         this.scene.input.off('wheel', this.handleCraftingScroll, this);
+    }
+
+    onResize(gameSize) {
+        const { width, height } = gameSize;
+
+        // Recalculer les dimensions principales
+        const bgWidth = width * 0.8;
+        const bgHeight = height * 0.8;
+        const bgX = (width - bgWidth) / 2;
+        const bgY = (height - bgHeight) / 2;
+
+        // Mettre à jour l'arrière-plan
+        const background = this.craftingContainer.list.find((child) => child instanceof Phaser.GameObjects.Rectangle);
+        if (background) {
+            background.setSize(bgWidth, bgHeight);
+            background.setPosition(bgX + bgWidth / 2, bgY + bgHeight / 2);
+        }
+
+        // Mettre à jour le titre
+        const title = this.craftingContainer.list.find((child) => child instanceof Phaser.GameObjects.Text);
+        if (title) {
+            title.setPosition(bgX + bgWidth / 2, bgY + 20);
+        }
+
+        // Mettre à jour les emplacements de recettes
+        const padding = 20;
+        const startX = bgX + padding;
+        const startY = bgY + 100;
+
+        this.recipeSlots.forEach((slotObj, index) => {
+            const slotY = startY + index * (this.slotHeight + padding);
+            const slot = slotObj.container;
+
+            slot.setPosition(bgX + bgWidth / 2, slotY);
+
+            const recipeBackground = slotObj.recipeBackground;
+            recipeBackground.setDisplaySize(bgWidth * 0.9, this.slotHeight);
+
+            //this.updateCraftingUI();
+        });
+
+        // Mettre à jour le masque
+        if (this.maskZone) {
+            this.maskZone.setPosition(bgX + bgWidth / 2, bgY + bgHeight / 2);
+            this.maskZone.setSize(bgWidth, bgHeight);
+            this.craftingContainer.setMask(this.maskZone.createGeometryMask());
+        }
+
+        // Mettre à jour les dimensions visibles
+        this.viewHeight = height;
+        this.contentHeight = this.recipeSlots.length * (this.slotHeight + padding);
+        this.updateScroll(); // Réappliquer le défilement
     }
 }

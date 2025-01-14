@@ -38,10 +38,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.playerHP = new HealthBar(scene);
 
     const config = {
-      width: 300,
-      height: 15,
-      x: 100,
-      y: 60,
+      width: this.scene.cameras.main.width/4,
+      height: this.scene.cameras.main.height/40,
+      x: this.scene.cameras.main.width/2 - (this.scene.cameras.main.width/4)/2,
+      y: 100,
       background: {
         color: 0xff0000,
       },
@@ -260,7 +260,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         });
     
         // **Afficher le cône d'attaque pour le débogage**
-        this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
+        //this.showAttackCone(centerX, centerY, attackRotation, attackRange, attackConeAngle);
     
         // Vérifier les collisions dans le cône
         const farmables = this.scene.farmableGroup.getChildren();
@@ -291,9 +291,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             }
         });
     }
-  
-
-
 
   rangedAttack(attackRange, attackDamageEntities) {
 
@@ -356,7 +353,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Retourner l'angle entre le joueur et la souris
     return [Math.atan2(dy, dx), pointerWorldX, pointerWorldY];
-  }
+}
   
   // Gestion des réductions de dommage
   takeDamage(attackDamage) {
@@ -372,7 +369,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       target.takeDamage(attackDamageEntities); 
     }
     else{
-      this.scene.hitFarmable(this, target, attackDamageFarmables);
+      console.log(target)
+      this.scene.hitFarmable(target, attackDamageFarmables);
     }
   }
 

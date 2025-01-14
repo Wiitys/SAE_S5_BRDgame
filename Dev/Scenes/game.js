@@ -22,60 +22,62 @@ var existingProjectiles;
 var existingEnemies;
 
 export class GameScene extends Phaser.Scene {
-    constructor() {
-        super("scene-game");
-        this.cursor;
-        this.farmableGroup;
-        this.dropsGroup;
-        this.projectiles;
-        this.otherPlayers;
-        this.playersGroup;
-        this.enemiesGroup;
-        this.backgroundMusicPlaying = false;
-    }
+  constructor() {
+    super("scene-game");
+    this.cursor;
+    this.farmableGroup;
+    this.dropsGroup;
+    this.projectiles;
+    this.otherPlayers;
+    this.playersGroup;
+    this.enemiesGroup;
+    this.backgroundMusicPlaying = false;
+  }
+	
+	preload() {
+    this.load.image('tiles', '/assets/map/Tiles.png');
+    this.load.tilemapTiledJSON('map', '/assets/map/map.json');
+    //load les sprites, sons, animations
+    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
     
-    preload() {
-        this.load.image('tiles', '/assets/map/Tiles.png');
-        this.load.tilemapTiledJSON('map', '/assets/map/map.json');
-        //load les sprites, sons, animations
-        this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
-        
-        
-        //Ennemis
-        this.load.image("ennemi", "/assets/ennemi.png");
-        this.load.image("projectileTexture", "/assets/projectileTexture.png");
-        this.load.image("meleeTexture", "/assets/meleeTexture.png");
-        
-        //farmables
-        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-        this.load.image("rock", "/assets/rock.png");
-        
-        //ressources
-        this.load.image("wood", "/assets/wood.png");
-        this.load.image("stone", "/assets/stone.png");
-        this.load.image("stick", "/assets/stick.png");
-        this.load.image("plank", "/assets/plank.png");
-        this.load.image("ironOre", "/assets/ironOre.png");
-        this.load.image("ironIngot", "/assets/ironIngot.png");
-        this.load.image("meat", "/assets/meat.png");
-        
-        //tools
-        this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-        this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
-        
-        // Charger les sons
-        this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
-    }
+
+    //Ennemis
+    this.load.image("ennemi", "/assets/ennemi.png");
+    this.load.image("projectileTexture", "/assets/projectileTexture.png");
+    this.load.image("meleeTexture", "/assets/meleeTexture.png");
+
+    //farmables
+    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.image("rock", "/assets/rock.png");
+
+    //ressources
+    this.load.image("wood", "/assets/wood.png");
+    this.load.image("stone", "/assets/stone.png");
+    this.load.image("stick", "/assets/stick.png");
+    this.load.image("plank", "/assets/plank.png");
+    this.load.image("ironIngot", "/assets/ironIngot.png");
+    this.load.image("iron", "/assets/iron.png");
+    this.load.image("gold", "/assets/gold.png");
+    this.load.image("meat", "/assets/meat.png");
+    this.load.image("apple", "/assets/apple.png");
+
+    //tools
+    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+
+    // Charger les sons
+    this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
+  }
     
-    create() {
+  create() {
         const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
         
         const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
         
         const backgroundLayer = map.createLayer('top', tileset, 0, 0);
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-        
+
         //créer les instances
         this.player = new Player(this, 20, 20);
         this.player.setCollideWorldBounds(true);
@@ -112,8 +114,8 @@ export class GameScene extends Phaser.Scene {
         this.hotbarUI = new HotbarUI(this, this.hotbarManagement);
         
         // Exemple : Ajouter des ressources pour tester
-        this.inventory.addItem("Ressource", "wood", 10);
-        this.inventory.addItem("Ressource", "stone", 5);
+        this.inventory.addItem("Ressource", "wood", 10, 0);
+        this.inventory.addItem("Ressource", "stone", 5, 0);
         
         this.inventory.addItem("Tool", "stoneAxe", 1);
         this.inventory.addItem("Tool", "woodenPickaxe", 1);
@@ -149,50 +151,57 @@ export class GameScene extends Phaser.Scene {
         console.log(enemy)
     }
     
-    createFarmable(type, x, y, id, hp) {
+    createFarmable(type, x, y, id, hp, drops) {
         // Créer une instance farmable
         const farmableElement = this.farmableGroup.create(x, y, type, 0);
         farmableElement.setOrigin(0.5, 0.5);
+        farmableElement.setDisplaySize(32, 32);
         farmableElement.id = id;
-        
-        switch (type) {
-            case "tree":
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "wood";
-            break;
-            case "rock":
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "stone";
-            break;
-            default:
-            farmableElement.setDisplaySize(32, 32);
-            farmableElement.category = "Ressource";
-            farmableElement.dropType = "wood";
-        }
-        
-        // Associer un objet Farmable à l'instance
+        farmableElement.drops = drops;
         farmableElement.farmableData = new Farmable(type, hp);
     }
     
-    hitFarmable(player, farmableElement, damage) {
+    hitFarmable(farmableElement, damage) {
         const farmable = farmableElement.farmableData;
-        const category = farmableElement.category;
-        const dropType = farmableElement.dropType;
-        
+        const drops = farmableElement.drops;
+        let randomDrop = {};
+        let finalDrops = {};
+
         if (farmable) {
             const dropQuantity = Math.min(damage, farmable.currentHp);
-            console.log(dropQuantity)
-            const drop = {
-                category: category,
-                type: dropType,
-                quantity: dropQuantity,
-                x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
-                y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
-            };
-            socket.emit('hitFarmable', farmableElement.id);
-            socket.emit('createDrop', drop);
+
+            // Pour chaque "hit", choisir un drop aléatoire
+            for (let i = 0; i < dropQuantity; i++) {
+                randomDrop = drops[Phaser.Math.Between(0, drops.length - 1)];
+                
+                // Si le drop existe déjà, on incrémente sa quantité
+                if (finalDrops[randomDrop.dropType]) {
+                    finalDrops[randomDrop.dropType].quantity++;
+                } else {
+                    // Sinon, on l'ajoute et on initialise sa quantité
+                    finalDrops[randomDrop.dropType] = {
+                        dropType: randomDrop.dropType,
+                        dropCategory: randomDrop.dropCategory,
+                        quantity: 1,
+                        dropValue: randomDrop.dropValue
+                    };
+                }
+            }
+
+            Object.values(finalDrops).forEach(farmableDrop => {
+
+                const drop = {
+                    category: farmableDrop.dropCategory,
+                    type: farmableDrop.dropType,
+                    quantity: farmableDrop.quantity,
+                    value: farmableDrop.dropValue,
+                    x: farmableElement.x + farmableElement.displayWidth / 2 + Phaser.Math.Between(-32, 32),
+                    y: farmableElement.y + farmableElement.displayHeight / 2 + Phaser.Math.Between(-32, 32),
+                };
+
+                socket.emit('hitFarmable', farmableElement.id);
+                socket.emit('createDrop', drop);
+            });
         }
     }
     
@@ -217,14 +226,14 @@ export class GameScene extends Phaser.Scene {
             farmableElement.setFrame(1);
             break;
             case "rock":
-            //farmableElement.setFrame(1);  pas encore fait
+            farmableElement.setFrame(1);
             break;
             default:
-            farmableElement.setFrame(1);
+            break;
         }
     }
     
-    createDrop(category, type, quantity, x, y, id) {
+    createDrop(category, type, quantity, value, x, y, id) {
         
         // Créer une instance de drop dans le groupe à la position générée
         const dropElement = this.dropsGroup.create(
@@ -234,7 +243,7 @@ export class GameScene extends Phaser.Scene {
         );
         dropElement.id = id;
         dropElement.setDisplaySize(30, 30);
-        dropElement.dropData = new Drop(category, type, quantity);
+        dropElement.dropData = new Drop(category, type, quantity, value);
         // Ajouter une physique de collision pour permettre la collecte
         this.physics.add.overlap(
             this.player,
@@ -409,7 +418,7 @@ export class GameScene extends Phaser.Scene {
             farmables.forEach(farmable => {
                 console.log('Farmable venant de liste reçu ' + farmable.id)
                 if (!existingFarmables.has(farmable.id)) { // Vérifier si le farmable existe déjà
-                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                    this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp, farmable.drops);
                     existingFarmables.add(farmable.id); // Ajouter l'ID à l'ensemble
                     console.log('farmable trouvé')
                 }
@@ -419,7 +428,7 @@ export class GameScene extends Phaser.Scene {
         socket.on('farmableCreated', (farmable) => {
             console.log('Farmable créé reçu ' + farmable.id);
             if (!existingFarmables.has(farmable.id)) {
-                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp);
+                this.createFarmable(farmable.type, farmable.x, farmable.y, farmable.id, farmable.hp, farmable.drops);
                 existingFarmables.add(farmable.id);
             }
         });
@@ -465,7 +474,7 @@ export class GameScene extends Phaser.Scene {
             drops.forEach(drop => {
                 console.log('resource venant de liste reçu ' + drop.id)
                 if (!existingDrops.has(drop.id)) { // Vérifier si la resource existe déjà
-                    this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                    this.createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y, drop.id);
                     existingDrops.add(drop.id); // Ajouter l'ID à l'ensemble
                 }
             });
@@ -474,7 +483,7 @@ export class GameScene extends Phaser.Scene {
         socket.on('dropCreated', (drop) => {
             console.log('Drop créé reçu ' + drop.id);
             if (!existingDrops.has(drop.id)) {
-                this.createDrop(drop.category, drop.type, drop.quantity, drop.x, drop.y, drop.id);
+                this.createDrop(drop.category, drop.type, drop.quantity, drop.value, drop.x, drop.y, drop.id);
                 existingDrops.add(drop.id);
             }
         });
@@ -495,6 +504,8 @@ export class GameScene extends Phaser.Scene {
         //ajouter les projectiles déjà présent lors de la connection
         
         socket.off('projectileCreated');
+        socket.off("rayWarning")
+        socket.off("rayAttack")
         
         socket.on('projectileCreated', (projectileData) => {
             const { id, x, y, targetX, targetY, speed, ownerId } = projectileData;
@@ -541,14 +552,9 @@ export class GameScene extends Phaser.Scene {
                                 console.log(targetEnemy.hp)
                                 projectile.destroy();
                                 existingProjectiles.delete(id);
-                            });
-                            
+                            });     
                         }
                     });
-                    
-                    
-                    // Gestion des collisions avec les joueurs
-                    
                     
                     // Détruire le projectile après un délai s'il ne touche rien
                     this.time.delayedCall(3000, () => {
@@ -559,8 +565,48 @@ export class GameScene extends Phaser.Scene {
                     });
                 }
             });
+
+            socket.on("rayWarning", (data) => {
+                const graphics = this.add.graphics();
+                graphics.fillStyle(0xff0000, 0.25);
+            
+                // Calcul de l'angle et de la distance
+                const angle = Phaser.Math.Angle.Between(data.x, data.y, data.endX, data.endY);
+                const distance = Phaser.Math.Distance.Between(data.x, data.y, data.endX, data.endY);
+            
+                // Position et rotation manuelles
+                graphics.setPosition(data.x, data.y);
+                graphics.rotateCanvas(angle);
+            
+                // Dessiner le rectangle centré
+                graphics.fillRect(0, -data.width / 2, distance, data.width);
+            
+                // Supprimer le graphique après la durée
+                setTimeout(() => graphics.destroy(), data.duration);
+            });
+            
+            socket.on("rayAttack", (data) => {
+                const graphics = this.add.graphics();
+                graphics.fillStyle(0xff0000, 1);
+            
+                // Calcul de l'angle et de la distance
+                const angle = Phaser.Math.Angle.Between(data.x, data.y, data.endX, data.endY);
+                const distance = Phaser.Math.Distance.Between(data.x, data.y, data.endX, data.endY);
+            
+                // Position et rotation manuelles
+                graphics.setPosition(data.x, data.y);
+                graphics.rotateCanvas(angle);
+            
+                // Dessiner le rectangle centré
+                graphics.fillRect(0, -data.width / 2, distance, data.width);
+            
+                // Supprimer le graphique après la durée
+                setTimeout(() => graphics.destroy(), 500);
+            });
+            
+            
         }
-        
+
         syncEnemies(){
             socket.off('updateEnemies')
             socket.off('updateEnemyTarget')
