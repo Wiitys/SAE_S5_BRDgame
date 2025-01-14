@@ -1,4 +1,4 @@
-import './style.css'
+import './styles/style.css'
 import Phaser from 'phaser'
 import { GameScene } from './Scenes/game.js';
 import { MenuScene } from './Scenes/menu.js';
