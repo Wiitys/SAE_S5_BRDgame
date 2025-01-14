@@ -54,18 +54,9 @@ export default class Hotbar {
             const slot = this.scene.add.rectangle(x, hotbarY, this.slotSize, this.slotSize, 0x444444)
                 .setStrokeStyle(2, i === this.selectedSlot ? 0xffff00 : 0xffffff)
                 .setScrollFactor(0); // Reste fixe à l'écran
+        
+            const itemSprite = this.scene.add.sprite(x, hotbarY, '').setDisplaySize(32, 32).setScrollFactor(0);
 
-            // Texte pour le nom de l'objet (en haut)
-            const nameText = this.scene.add.text(
-                x - this.slotSize / 2 + 5, // Position X : à gauche dans le slot
-                hotbarY - this.slotSize / 2 + 5, // Position Y : en haut
-                '', {
-                    fontSize: '10px',
-                    fill: '#fff',
-                    align: 'left',
-                    wordWrap: { width: this.slotSize - 10 } // Limite la largeur du texte
-                }
-            ).setOrigin(0, 0).setScrollFactor(0);
 
             // Texte pour la quantité de l'objet (en bas à droite)
             const quantityText = this.scene.add.text(
@@ -78,7 +69,7 @@ export default class Hotbar {
                 }
             ).setOrigin(1, 1).setScrollFactor(0);
 
-            this.hotbarSlots.push({ slot, nameText, quantityText });
+            this.hotbarSlots.push({ slot, itemSprite, quantityText });
         }
     }
 
@@ -88,19 +79,23 @@ export default class Hotbar {
         console.log("updateHotbar",items);
 
         for (let i = 0; i < this.hotbarSlots.length; i++) {
-            const { nameText, quantityText, slot } = this.hotbarSlots[i];
+            const { itemSprite, quantityText, slot } = this.hotbarSlots[i];
 
             if (items[i]) {
                 const item = items[i];
+                const itemData = this.manager.inventory.inventory[item].item;
                 const quantity = this.manager.inventory.inventory[item].item.quantity;
 
-                // Mettre à jour le texte du nom
-                nameText.setText(item);
+                itemSprite.setTexture(itemData.type);
+                itemSprite.setDisplaySize(32, 32);
+                itemSprite.setVisible(true);
+
 
                 // Mettre à jour le texte de la quantité
                 quantityText.setText(quantity > 1 || !(this.manager.inventory.inventory[item].item instanceof Tool) ? `${quantity}` : '');
             } else {
-                nameText.setText('');
+                itemSprite.setTexture(''); 
+                itemSprite.setVisible(false);
                 quantityText.setText('');
             }
 
@@ -137,18 +132,20 @@ export default class Hotbar {
 
     showUI() {
         this.visible = true;
-        this.hotbarSlots.forEach(({ slot, nameText, quantityText }) => {
+        this.hotbarSlots.forEach(({ slot, itemSprite, quantityText }) => {
             slot.visible = true;
-            nameText.visible = true;
+            if (!itemSprite.texture || itemSprite.texture.key === '') {
+                itemSprite.visible = true;
+            }            
             quantityText.visible = true;
         });
     }
 
     hideUI() {
         this.visible = false;
-        this.hotbarSlots.forEach(({ slot, nameText, quantityText }) => {
+        this.hotbarSlots.forEach(({ slot, itemSprite, quantityText }) => {
             slot.visible = false;
-            nameText.visible = false;
+            itemSprite.visible = false;
             quantityText.visible = false;
         });
     }
