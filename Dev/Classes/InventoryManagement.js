@@ -1,6 +1,7 @@
 import Ressource from "./Ressource.js";
 import Tool from "./Tool.js";
 import Craftable from "./Craftable.js";
+import RangedWeapon from "./RangedWeapon.js";
 import socket from '../Modules/socket.js';
 
 export default class Inventory {
@@ -29,6 +30,7 @@ export default class Inventory {
     initializeCraftables() {
         return {
             stick: new Craftable("Ressource", "stick", 2, { wood: 1 }),
+            bow: new Craftable('Tool', 'bow', 1, { stick: 2 }),
             plank: new Craftable("Ressource", "plank", 4, { wood: 2 }),
             ironIngot: new Craftable("Ressource", "ironIngot", 1, { ironOre: 2 }),
             woodenAxe: new Craftable("Tool", "woodenAxe", 1, { plank: 3, stick: 2 }),
@@ -37,7 +39,7 @@ export default class Inventory {
             stonePickaxe: new Craftable("Tool", "stonePickaxe", 1, { stone: 3, stick: 2 }),
             ironSword: new Craftable("Tool", "ironSword", 1, { ironIngot: 2, stick: 2 }),
             ironAxe: new Craftable("Tool", "ironAxe", 1, { ironIngot: 3, stick: 2 }),
-            ironPickaxe: new Craftable("Tool", "ironPickaxe", 1, { ironIngot: 3, stick: 2 })
+            ironPickaxe: new Craftable("Tool", "ironPickaxe", 1, { ironIngot: 3, stick: 2 }),
         };
     }
 
@@ -50,7 +52,8 @@ export default class Inventory {
             stoneAxe: new Tool('stoneAxe', 70, 90, 4, 3),
             ironSword: new Tool('ironSword', 90, 70, 0, 10),
             ironAxe: new Tool('ironAxe', 70, 90, 8, 5),
-            ironPickaxe: new Tool('ironPickaxe', 45, 90, 8, 5)
+            ironPickaxe: new Tool('ironPickaxe', 45, 90, 8, 5),
+            bow: new RangedWeapon('Tool', 'bow', undefined, 5)
         };
     }
 

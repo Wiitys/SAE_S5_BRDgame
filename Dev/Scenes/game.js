@@ -22,57 +22,57 @@ var existingProjectiles;
 var existingEnemies;
 
 export class GameScene extends Phaser.Scene {
-  constructor() {
-    super("scene-game");
-    this.cursor;
-    this.farmableGroup;
-    this.dropsGroup;
-    this.projectiles;
-    this.otherPlayers;
-    this.playersGroup;
-    this.enemiesGroup;
-    this.backgroundMusicPlaying = false;
-  }
-	
-	preload() {
-    this.load.image('tiles', '/assets/map/Tiles.png');
-    this.load.tilemapTiledJSON('map', '/assets/map/map.json');
-    //load les sprites, sons, animations
-    this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
+    constructor() {
+        super("scene-game");
+        this.cursor;
+        this.farmableGroup;
+        this.dropsGroup;
+        this.projectiles;
+        this.otherPlayers;
+        this.playersGroup;
+        this.enemiesGroup;
+        this.backgroundMusicPlaying = false;
+    }
     
-
-    //Ennemis
-    this.load.image("ennemi", "/assets/ennemi.png");
-    this.load.image("projectileTexture", "/assets/projectileTexture.png");
-    this.load.image("meleeTexture", "/assets/meleeTexture.png");
-
-    //farmables
-    this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.image("rock", "/assets/rock.png");
-
-    //ressources
-    this.load.image("wood", "/assets/wood.png");
-    this.load.image("stone", "/assets/stone.png");
-    this.load.image("stick", "/assets/stick.png");
-    this.load.image("plank", "/assets/plank.png");
-    this.load.image("ironOre", "/assets/ironOre.png");
-    this.load.image("ironIngot", "/assets/ironIngot.png");
-    this.load.image("meat", "/assets/meat.png");
-
-    //tools
-    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
-
-    // Charger les sons
-    this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
-  }
+    preload() {
+        this.load.image('tiles', '/assets/map/Tiles.png');
+        this.load.tilemapTiledJSON('map', '/assets/map/map.json');
+        //load les sprites, sons, animations
+        this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
+        
+        
+        //Ennemis
+        this.load.image("ennemi", "/assets/ennemi.png");
+        this.load.image("projectileTexture", "/assets/projectileTexture.png");
+        this.load.image("meleeTexture", "/assets/meleeTexture.png");
+        
+        //farmables
+        this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.image("rock", "/assets/rock.png");
+        
+        //ressources
+        this.load.image("wood", "/assets/wood.png");
+        this.load.image("stone", "/assets/stone.png");
+        this.load.image("stick", "/assets/stick.png");
+        this.load.image("plank", "/assets/plank.png");
+        this.load.image("ironOre", "/assets/ironOre.png");
+        this.load.image("ironIngot", "/assets/ironIngot.png");
+        this.load.image("meat", "/assets/meat.png");
+        
+        //tools
+        this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
+        this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+        
+        // Charger les sons
+        this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
+    }
     
     create() {
         const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
         
         const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
-    
+        
         const backgroundLayer = map.createLayer('top', tileset, 0, 0);
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         
@@ -117,9 +117,9 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.addItem("Tool", "stoneAxe", 1);
         this.inventory.addItem("Tool", "woodenPickaxe", 1);
-
+        
         this.createMeat(50,50)
-
+        
         this.backgroundMusic = this.sound.add('backgroundMusic', {
             volume: 0.33, // Ajuster le volume
             loop: true,  // Activer la boucle
@@ -130,7 +130,7 @@ export class GameScene extends Phaser.Scene {
         // Gestion des mouvements du joueur
         this.player.update();
         this.updateOtherPlayers();
-
+        
         if (!this.backgroundMusicPlaying) {
             this.backgroundMusic.play();
             this.backgroundMusicPlaying = true; // Empêcher de rejouer
@@ -618,4 +618,5 @@ export class GameScene extends Phaser.Scene {
             });
         }
     }
+    
     

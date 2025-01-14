@@ -48,7 +48,7 @@ createInitialFarmables()
 loadFarmablesFromMap()
 loadMonsterSpawns()
 //createEnemy(0, 0, undefined,'neutral', undefined, 100, 200)
-createEnemy(0, 0, 'boss','aggressive', undefined, 200, 300)
+createEnemy('boss', 0, 0, 'boss','aggressive', undefined, 200, 300)
 
 ioServer.on('connection', (socket) => {
     
@@ -265,7 +265,7 @@ function destroyEnemy(index){
     console.log(enemy)
     // Réapparition après un délai
     setTimeout(() => {
-        createEnemy(enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay);
+        createEnemy(enemy.name, enemy.spawnX, enemy.spawnY, enemy.type, enemy.behavior, enemy.maxHp, enemy.attackRange, enemy.searchRange, enemy.actionDelay);
     }, ENEMY_RESPAWN_TIME);
 }
 

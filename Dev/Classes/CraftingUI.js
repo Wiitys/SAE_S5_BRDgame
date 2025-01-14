@@ -46,7 +46,7 @@ export default class CraftingUI {
         
         this.recipeSlots = [];
         this.slotHeight = 128; // Hauteur d'un slot
-        const rows = 10; // Total des recettes (débordera l'écran)
+        const rows = 20; // Total des recettes (débordera l'écran)
         const padding = 20;
         const startX = bgX + padding;
         const startY = bgY + 100;
@@ -210,7 +210,7 @@ export default class CraftingUI {
             }
         });
         
-        this.updateCraftingContainerHeight(maxIndex-1)
+        this.updateCraftingContainerHeight(maxIndex)
     }
 
     // Gestionnaire pour vérifier si un bouton a été cliqué
@@ -256,9 +256,6 @@ export default class CraftingUI {
         // Activer les inputs spécifiques au crafting
         this.enableCraftingInputs();
         this.scene.children.bringToTop(this.craftingContainer);
-        this.scene.player.setDepth(0);
-        this.scene.player.foodometer.bar.setDepth(0);
-        this.scene.player.foodometer.background.setDepth(0);
         this.maskZone.setAlpha(1);
     }
     
@@ -269,9 +266,6 @@ export default class CraftingUI {
         
         // Désactiver les inputs spécifiques au crafting
         this.disableCraftingInputs();
-        this.scene.player.setDepth(1);
-        this.scene.player.foodometer.bar.setDepth(1);
-        this.scene.player.foodometer.background.setDepth(1);
         this.maskZone.setAlpha(0);
     }
     
