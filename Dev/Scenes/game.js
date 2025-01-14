@@ -39,7 +39,7 @@ export class GameScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('map', '/assets/map/map.json');
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('sword_slash', '/assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
     
 
     //Ennemis
