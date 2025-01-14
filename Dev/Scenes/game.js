@@ -63,8 +63,8 @@ export class GameScene extends Phaser.Scene {
     this.load.image("apple", "/assets/apple.png");
 
     //tools
-    this.load.image('stoneAxe', 'assets/tools/stoneAxe.png');
-    this.load.image('woodenPickaxe', 'assets/tools/woodenPickaxe.png');
+    this.load.image('stoneAxe', '/assets/tools/stoneAxe.png');
+    this.load.image('woodenPickaxe', '/assets/tools/woodenPickaxe.png');
 
     // Charger les sons
     this.load.audio('backgroundMusic', '/assets/Audio/backgroundMusic.wav');
