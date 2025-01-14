@@ -50,37 +50,6 @@ export default class CraftingUI {
         
         this.recipeSlots = [];
         this.slotHeight = 128; // Hauteur d'un slot
-        this.createSlotBackground();
-        
-        //Créer une zone visible (le masque)
-        const maskZone = this.scene.add.rectangle(
-            bgX + bgWidth / 2,
-            bgY + bgHeight / 2,
-            bgWidth,
-            bgHeight,
-            0.5 // Transparence
-        ).setOrigin(0.5).setScrollFactor(0);
-        const mask = maskZone.createGeometryMask();
-        this.craftingContainer.setMask(mask);
-        
-        // Conserver le masque dans la scène pour des ajustements futurs (facultatif)
-        this.maskZone = maskZone;
-        
-        this.viewHeight = screenHeight; // Hauteur visible
-        this.contentHeight = this.recipeSlots.length * (128 + 20); // Hauteur totale
-        this.updateCraftingUI();
-    }
-
-    createSlotBackground(){
-        const camera = this.scene.cameras.main;
-        const screenWidth = camera.width;
-        const screenHeight = camera.height;
-        
-        const bgWidth = screenWidth * 0.8;
-        const bgHeight = screenHeight * 0.8;
-        const bgX = (screenWidth - bgWidth) / 2;
-        const bgY = (screenHeight - bgHeight) / 2;
-
         const rows = 20; // Total des recettes (débordera l'écran)
         const padding = 20;
         const startX = bgX + padding;
@@ -104,6 +73,25 @@ export default class CraftingUI {
                 index: row,
             });
         }
+        
+        //Créer une zone visible (le masque)
+        const maskZone = this.scene.add.rectangle(
+            bgX + bgWidth / 2,
+            bgY + bgHeight / 2,
+            bgWidth,
+            bgHeight,
+            0.5 // Transparence
+        ).setOrigin(0.5).setScrollFactor(0);
+        const mask = maskZone.createGeometryMask();
+        this.craftingContainer.setMask(mask);
+        
+        // Conserver le masque dans la scène pour des ajustements futurs (facultatif)
+        this.maskZone = maskZone;
+        this.maskZone.setAlpha(0);
+        
+        this.viewHeight = screenHeight; // Hauteur visible
+        this.contentHeight = this.recipeSlots.length * (128 + 20); // Hauteur totale
+        this.updateCraftingUI();
     }
 
     updateCraftingContainerHeight(maxIndex) {
@@ -225,8 +213,8 @@ export default class CraftingUI {
                 slot.removeAll(true);
             }
         });
-        //this.createSlotBackground();
-        this.updateCraftingContainerHeight(maxIndex-1)
+        
+        this.updateCraftingContainerHeight(maxIndex)
     }
 
     // Gestionnaire pour vérifier si un bouton a été cliqué
@@ -253,13 +241,7 @@ export default class CraftingUI {
 
 
     performCraft(craftable) {
-        if (craftable.isCraftable(this.inventory)) {
-            craftable.craft(this.inventory);
-            this.scene.events.emit('craftingUpdate');
-            console.log(`Crafted: ${craftable.type}`);
-        } else {
-            console.log('Not enough resources!');
-        }
+        this.inventory.playerCraft(craftable.category, craftable.type, craftable.quantity);
     }
     
     toggleUI() {
@@ -278,9 +260,7 @@ export default class CraftingUI {
         // Activer les inputs spécifiques au crafting
         this.enableCraftingInputs();
         this.scene.children.bringToTop(this.craftingContainer);
-        this.scene.player.setDepth(0);
-        this.scene.player.foodometer.bar.setDepth(0);
-        this.scene.player.foodometer.background.setDepth(0);
+        this.maskZone.setAlpha(1);
     }
     
     hideUI() {
@@ -290,20 +270,18 @@ export default class CraftingUI {
         
         // Désactiver les inputs spécifiques au crafting
         this.disableCraftingInputs();
-        this.scene.player.setDepth(1);
-        this.scene.player.foodometer.bar.setDepth(1);
-        this.scene.player.foodometer.background.setDepth(1);
+        this.maskZone.setAlpha(0);
     }
     
     enableCraftingInputs() {
         // Ajouter des événements pour les clics ou les glissements sur les éléments de l'UI
-        this.scene.input.on('pointerdown', (pointer) => this.handleCraftButtonClick(pointer));
+        this.scene.input.on('pointerdown', this.handleCraftButtonClick, this);
         this.scene.input.on('wheel', this.handleCraftingScroll, this);
     }
     
     disableCraftingInputs() {
         // Retirer les événements pour éviter les conflits
-        this.scene.input.off('pointerdown', (pointer) => this.handleCraftButtonClick(pointer));
+        this.scene.input.off('pointerdown', this.handleCraftButtonClick, this);
         this.scene.input.off('wheel', this.handleCraftingScroll, this);
     }
 

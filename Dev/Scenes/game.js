@@ -39,8 +39,9 @@ export class GameScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('map', '/assets/map/map.json');
     //load les sprites, sons, animations
     this.load.spritesheet('player','/assets/MC/SpriteSheetMC.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.spritesheet('sword_slash', 'assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('sword_slash', '/assets/SwordSlash.png', {frameWidth: 32, frameHeight: 32 });
     
+
     //Ennemis
     this.load.image("ennemi", "/assets/ennemi.png");
     this.load.image("projectileTexture", "/assets/projectileTexture.png");
@@ -48,9 +49,7 @@ export class GameScene extends Phaser.Scene {
 
     //farmables
     this.load.spritesheet('tree', '/assets/treeSpritesheet.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.image("rock", "/assets/rockSpritesheet.png", { frameWidth: 32, frameHeight: 32 });
-    this.load.image("ironOre", "/assets/ironOre.png");
-    this.load.image("goldOre", "/assets/goldOre.png");
+    this.load.image("rock", "/assets/rock.png");
 
     //ressources
     this.load.image("wood", "/assets/wood.png");
@@ -75,7 +74,7 @@ export class GameScene extends Phaser.Scene {
         const map = this.make.tilemap({ key: 'map', tileWidth:16, tileHeigt: 16});
         
         const tileset = map.addTilesetImage('Tiles1', 'tiles'); // Correspond au nom du tileset dans Tiled
-    
+        
         const backgroundLayer = map.createLayer('top', tileset, 0, 0);
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
@@ -120,9 +119,9 @@ export class GameScene extends Phaser.Scene {
         
         this.inventory.addItem("Tool", "stoneAxe", 1);
         this.inventory.addItem("Tool", "woodenPickaxe", 1);
-
+        
         this.createMeat(50,50)
-
+        
         this.backgroundMusic = this.sound.add('backgroundMusic', {
             volume: 0.33, // Ajuster le volume
             loop: true,  // Activer la boucle
@@ -133,7 +132,7 @@ export class GameScene extends Phaser.Scene {
         // Gestion des mouvements du joueur
         this.player.update();
         this.updateOtherPlayers();
-
+        
         if (!this.backgroundMusicPlaying) {
             this.backgroundMusic.play();
             this.backgroundMusicPlaying = true; // Empêcher de rejouer
@@ -665,4 +664,5 @@ export class GameScene extends Phaser.Scene {
             });
         }
     }
+    
     

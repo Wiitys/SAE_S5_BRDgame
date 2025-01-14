@@ -22,9 +22,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastDirection = "up";
     this.equippedTool = null;
     this.toolSprite = null;
+    this.isAttackEnabled = true;
     this.cursor = scene.input.keyboard.createCursorKeys();
     this.EKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-    this.AKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+
+    this.scene.input.on("pointerdown", (pointer) => {
+      if (this.isAttackEnabled && pointer.leftButtonDown()) {
+        this.handleInteraction();
+      }
+    });
+
+    
 
     // Gestion de la vie
     this.playerHP = new HealthBar(scene);
@@ -93,7 +101,39 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       frames: this.anims.generateFrameNumbers('sword_slash', { start: 0, end: 3 }),
       frameRate: 10,
       repeat: 0
-  });
+    });
+  }
+
+  handleInteraction(){
+    if(this.equippedTool){
+      switch (this.equippedTool.category){
+        case 'Tool':
+          this.handleAttack()
+          break;
+        case 'Food':
+          this.eatFood()
+          break;
+        case 'Ressource':
+          //??
+        default:
+          this.attackCone();
+          break;
+      }
+    } else {
+      this.attackCone();
+    }
+  }
+
+  handleAttack() {
+    if (this.equippedTool) {
+      if (!this.equippedTool.isRanged) {
+        this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
+      } else {
+        this.rangedAttack(this.equippedTool.range, this.equippedTool.attackDamage);
+      }
+    } else {
+      this.attackCone();
+    }
   }
 
   // Gérer les mouvements du joueur
@@ -264,13 +304,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Définir la vitesse de déplacement
     const speed = 150; // pixels par seconde
-    
-    // Calculer la vitesse en X et Y à partir de l'angle
-    const velocityX = Math.cos(attackRotation) * speed;
-    const velocityY = Math.sin(attackRotation) * speed;
-
-    // Appliquer la vitesse au projectile
-    //projectile.setVelocity(velocityX, velocityY);
 
     // Synchronisation avec le serveur
     socket.emit('createProjectile', {
@@ -344,6 +377,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   equipTool(tool) {
     this.equippedTool = tool;
     console.log(tool.type)
+    console.log(tool.isRanged)
     // Si un outil est déjà affiché, changez son sprite
     if (this.toolSprite) {
         this.toolSprite.setTexture(this.equippedTool.type);
@@ -407,28 +441,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   update() {
     this.handleMovement();
-    //lorsque l'objet est consommé le joueur ne peux pas attaquer sauf si il rééquipe un item
-    
-    if (Phaser.Input.Keyboard.JustDown(this.AKey)) {
-      if(this.equippedTool){
-        switch (this.equippedTool.category){
-          case 'Tool':
-            this.attackCone(this.equippedTool.range, this.equippedTool.angle, this.equippedTool.farmableDamage, this.equippedTool.attackDamage);
-            break;
-          case 'Food':
-            this.eatFood()
-            break;
-          case 'Ressource':
-            //??
-          default:
-            this.attackCone();
-            break;
-        }
-      } else {
-        this.attackCone();
-      }
-      
-    }
 
     if(this.equippedTool){
       this.toolSprite.setPosition(this.x + 16, this.y);
@@ -437,6 +449,34 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.playerHP.currentHealth <= 0) {
       this.scene.inventory.dropInventory(this.x, this.y, this.displayWidth, this.displayHeight)
       this.scene.scene.start("scene-menu");
+    }
+
+    
+
+    if(this.scene.inventoryUI.visible || this.scene.craftingUI.visible){
+      if(this.depth != 0){
+        this.setDepth(0);
+        this.foodometer.bar.setDepth(0);
+        this.foodometer.background.setDepth(0);
+      }
+
+      if(this.isAttackEnabled){
+        this.isAttackEnabled = false;
+        console.log("Attack enabled:", this.isAttackEnabled);
+      }
+    
+    } else if (!this.scene.inventoryUI.visible && !this.scene.craftingUI.visible) {
+      if(this.depth != 1){
+        this.setDepth(1);
+        this.foodometer.bar.setDepth(1);
+        this.foodometer.background.setDepth(1);
+      }
+      
+      if(!this.isAttackEnabled){
+        this.isAttackEnabled = true;
+        console.log("Attack enabled:", this.isAttackEnabled);
+      }
+      
     }
   }
 }

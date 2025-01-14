@@ -4,6 +4,8 @@ export default class HotbarManager {
         this.nbSlots = this.inventory.cols;
         this.selectedSlot = 0;
         this.callbacks = [];
+
+        this.inventory.onInventoryUpdate(() => this.triggerUpdate());
     }
 
     // Méthode pour ajouter un écouteur
@@ -14,6 +16,7 @@ export default class HotbarManager {
     // Méthode pour déclencher les callbacks
     triggerUpdate() {
         this.callbacks.forEach(callback => callback());
+        this.autoEquipOrUnequipSelectedItem();
     }
 
     getNbSlots() {
@@ -24,6 +27,7 @@ export default class HotbarManager {
         const slots = this.inventory.getSlots();
         const totalSlots = slots.length;
         const lastRowStart = totalSlots - this.nbSlots;
+        
         return slots.slice(lastRowStart);
     }
     
@@ -43,20 +47,27 @@ export default class HotbarManager {
     
         return lastRowKeys;
     }
-    
-    
+
+    autoEquipOrUnequipSelectedItem() {
+        const selectedItemKey = this.getSelectedItem();
+        const selectedSlotKey = this.getLastRowInventoryKeys()[this.selectedSlot];
+
+        // Si le slot sélectionné est vide ou n'a pas d'item, on déséquipe
+        if (!selectedSlotKey || selectedSlotKey === null) {
+            this.inventory.unequipItem();  // Déséquipe l'item
+        } else {
+            const selectedItem = this.inventory.inventory[selectedItemKey];
+            if (selectedItem && selectedItem.item) {
+                this.inventory.equipItem(selectedItemKey);  // Équipe l'item sélectionné
+            }
+        }
+    }
 
     selectSlot(index) {
         const slots = this.getLastRowInventoryKeys(); // Utilise la méthode centralisée pour les slots
         if (index >= 0 && index < slots.length) {
             this.selectedSlot = index; // Change le slot sélectionné
             this.triggerUpdate();
-            const itemKey = slots[index]; // Récupère la clé de l'item
-            if (itemKey && itemKey != null) {
-                this.inventory.equipItem(itemKey); // Équipe l'objet correspondant
-            } else{
-                this.inventory.unequipItem();
-            }
         } else {
             console.warn(`Index de slot invalide : ${index}`);
         }
@@ -64,7 +75,7 @@ export default class HotbarManager {
     
 
     getSelectedItem() {
-        const slots = this.getActiveInventoryKeys();
+        const slots = this.getLastRowInventoryKeys();
         return slots[this.selectedSlot] || null;
     }
 }
